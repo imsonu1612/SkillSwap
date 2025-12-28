@@ -31,5 +31,16 @@
       "src": "/(.*)",
       "dest": "client/build/index.html"
     }
-  ]
+  ],
+  "env": {
+    "MONGODB_URI": "mongodb+srv://sonuyadav9308232:Sonu%403156@skillswap-db.mziurkd.mongodb.net/skillswap?retryWrites=true&w=majority&appName=skillswap-db",
+    "JWT_SECRET": "skillswap-secret-key-2024",
+    "JWT_EXPIRE": "7d",
+    "NODE_ENV": "production",
+    "CLIENT_URL": "https://skill-swap-jq51.vercel.app",
+    "EMAIL_USER": "sonuyadav930822@gmail.com",
+    "EMAIL_PASSWORD": "alss bazy lzjp httn",
+    "RATE_LIMIT_WINDOW_MS": "900000",
+    "RATE_LIMIT_MAX_REQUESTS": "100"
+  }
 }
