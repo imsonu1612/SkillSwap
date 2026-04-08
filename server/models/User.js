@@ -82,6 +82,10 @@ const userSchema = new mongoose.Schema({
     expiresAt: {
       type: Date,
       default: null
+    },
+    lastSentAt: {
+      type: Date,
+      default: null
     }
   },
   lastActive: {

@@ -7,8 +7,23 @@ const { generateOTP, sendOTPEmail, sendWelcomeEmail } = require('../services/ema
 
 const router = express.Router();
 
+const getAuthConfigError = () => {
+  if (!process.env.JWT_SECRET) {
+    return 'JWT_SECRET is not configured';
+  }
+
+  return null;
+};
+
 // Generate JWT Token
 const generateToken = (userId) => {
+  const configError = getAuthConfigError();
+  if (configError) {
+    const error = new Error(configError);
+    error.code = 'AUTH_CONFIG_ERROR';
+    throw error;
+  }
+
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
@@ -38,6 +53,14 @@ router.post('/register', [
     .withMessage('Last name is required')
 ], async (req, res) => {
   try {
+    const configError = getAuthConfigError();
+    if (configError) {
+      return res.status(503).json({
+        error: 'Authentication service unavailable',
+        message: configError
+      });
+    }
+
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -77,14 +100,23 @@ router.post('/register', [
       isVerified: false,
       otp: {
         code: otp,
-        expiresAt: otpExpiresAt
+        expiresAt: otpExpiresAt,
+        lastSentAt: new Date()
       }
     });
 
     await user.save();
 
-    // Send OTP email
-    await sendOTPEmail(email, otp, firstName);
+    try {
+      await sendOTPEmail(email, otp, firstName);
+    } catch (emailError) {
+      // Roll back user creation so registration can be retried cleanly.
+      await User.findByIdAndDelete(user._id);
+      return res.status(503).json({
+        error: 'Email service unavailable',
+        message: 'Could not send verification code. Please try again.'
+      });
+    }
 
     res.status(200).json({
       message: 'OTP sent successfully',
@@ -93,6 +125,13 @@ router.post('/register', [
     });
 
   } catch (error) {
+    if (error.code === 'AUTH_CONFIG_ERROR') {
+      return res.status(503).json({
+        error: 'Authentication service unavailable',
+        message: error.message
+      });
+    }
+
     console.error('🔴 Registration error:', error.message);
     console.error('🔍 Error stack:', error.stack);
     console.error('🔍 MongoDB connection state:', mongoose.connection.readyState);
@@ -115,6 +154,14 @@ router.post('/verify-otp', [
     .withMessage('OTP must be 6 digits')
 ], async (req, res) => {
   try {
+    const configError = getAuthConfigError();
+    if (configError) {
+      return res.status(503).json({
+        error: 'Authentication service unavailable',
+        message: configError
+      });
+    }
+
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -233,6 +280,16 @@ router.post('/resend-otp', [
       });
     }
 
+    // Rate-limit OTP resends to reduce abuse.
+    const now = new Date();
+    const lastSentAt = user.otp?.lastSentAt ? new Date(user.otp.lastSentAt) : null;
+    if (lastSentAt && now - lastSentAt < 60 * 1000) {
+      return res.status(429).json({
+        error: 'Too many requests',
+        message: 'Please wait at least 60 seconds before requesting another OTP'
+      });
+    }
+
     // Generate new OTP
     const otp = generateOTP();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
@@ -240,6 +297,7 @@ router.post('/resend-otp', [
     // Update user with new OTP
     user.otp.code = otp;
     user.otp.expiresAt = otpExpiresAt;
+    user.otp.lastSentAt = now;
     await user.save();
 
     // Send new OTP email
@@ -323,6 +381,13 @@ router.post('/login', [
     });
 
   } catch (error) {
+    if (error.code === 'AUTH_CONFIG_ERROR') {
+      return res.status(503).json({
+        error: 'Authentication service unavailable',
+        message: error.message
+      });
+    }
+
     console.error('Login error:', error);
     res.status(500).json({
       error: 'Login failed',
@@ -334,6 +399,14 @@ router.post('/login', [
 // Get current user (protected route)
 router.get('/me', async (req, res) => {
   try {
+    const configError = getAuthConfigError();
+    if (configError) {
+      return res.status(503).json({
+        error: 'Authentication service unavailable',
+        message: configError
+      });
+    }
+
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
@@ -358,6 +431,13 @@ router.get('/me', async (req, res) => {
     });
 
   } catch (error) {
+    if (error.code === 'AUTH_CONFIG_ERROR') {
+      return res.status(503).json({
+        error: 'Authentication service unavailable',
+        message: error.message
+      });
+    }
+
     console.error('Token verification error:', error);
     res.status(401).json({
       error: 'Access denied',

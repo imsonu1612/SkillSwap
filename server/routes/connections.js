@@ -90,10 +90,13 @@ router.post('/request', authenticateToken, [
       });
     }
 
-    // Check if request already exists
+    // Check if a pending request already exists in either direction
     const existingRequest = await ConnectionRequest.findOne({
-      from: fromUserId,
-      to: toUserId
+      $or: [
+        { from: fromUserId, to: toUserId },
+        { from: toUserId, to: fromUserId }
+      ],
+      status: 'pending'
     });
 
     if (existingRequest) {
@@ -155,11 +158,11 @@ router.get('/requests', authenticateToken, async (req, res) => {
     }).populate('from', 'firstName lastName username email avatar');
 
     res.json({
-      requests: requests.map(req => ({
-        id: req._id,
-        from: req.from.getPublicProfile(),
-        message: req.message,
-        createdAt: req.createdAt
+      requests: requests.map((requestItem) => ({
+        id: requestItem._id,
+        from: requestItem.from.getPublicProfile(),
+        message: requestItem.message,
+        createdAt: requestItem.createdAt
       }))
     });
 
@@ -340,10 +343,10 @@ router.get('/activity', authenticateToken, async (req, res) => {
     .limit(5);
 
     // Format activities
-    const requestActivities = requests.map(req => ({
+    const requestActivities = requests.map((requestItem) => ({
       type: 'connection_request',
-      user: req.from.getPublicProfile(),
-      createdAt: req.createdAt
+      user: requestItem.from.getPublicProfile(),
+      createdAt: requestItem.createdAt
     }));
 
     const connectionActivities = connections.map(conn => ({
@@ -532,16 +535,25 @@ router.get('/status/:userId', authenticateToken, async (req, res) => {
       ]
     });
 
-    // Check if request is pending
-    const pendingRequest = await ConnectionRequest.findOne({
+    // Check if an outgoing request is pending
+    const pendingOutgoingRequest = await ConnectionRequest.findOne({
       from: currentUserId,
       to: targetUserId,
       status: 'pending'
     });
 
+    // Check if an incoming request is pending
+    const pendingIncomingRequest = await ConnectionRequest.findOne({
+      from: targetUserId,
+      to: currentUserId,
+      status: 'pending'
+    });
+
     res.json({
       isConnected: !!existingConnection,
-      isPending: !!pendingRequest
+      isPendingOutgoing: !!pendingOutgoingRequest,
+      isPendingIncoming: !!pendingIncomingRequest,
+      isPending: !!pendingOutgoingRequest || !!pendingIncomingRequest
     });
 
   } catch (error) {

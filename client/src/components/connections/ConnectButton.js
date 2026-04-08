@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Send, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const ConnectButton = ({ targetUserId, targetUserName, onConnect }) => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState('');
   const [isConnected, setIsConnected] = useState(false);
-  const [isPending, setIsPending] = useState(false);
+  const [isPendingOutgoing, setIsPendingOutgoing] = useState(false);
+  const [isPendingIncoming, setIsPendingIncoming] = useState(false);
 
   useEffect(() => {
     checkConnectionStatus();
@@ -22,18 +25,14 @@ const ConnectButton = ({ targetUserId, targetUserName, onConnect }) => {
       });
       const data = await response.json();
       setIsConnected(data.isConnected);
-      setIsPending(data.isPending);
+      setIsPendingOutgoing(data.isPendingOutgoing || false);
+      setIsPendingIncoming(data.isPendingIncoming || false);
     } catch (error) {
       console.error('Status check error:', error);
     }
   };
 
   const handleConnect = async () => {
-    if (!message.trim()) {
-      toast.error('Please enter a message');
-      return;
-    }
-
     setIsLoading(true);
     try {
       const response = await fetch('/api/connections/request', {
@@ -54,7 +53,7 @@ const ConnectButton = ({ targetUserId, targetUserName, onConnect }) => {
         toast.success('Connection request sent successfully!');
         setShowModal(false);
         setMessage('');
-        setIsPending(true);
+        setIsPendingOutgoing(true);
         if (onConnect) onConnect();
       } else {
         toast.error(data.message || 'Failed to send connection request');
@@ -79,7 +78,18 @@ const ConnectButton = ({ targetUserId, targetUserName, onConnect }) => {
     );
   }
 
-  if (isPending) {
+  if (isPendingIncoming) {
+    return (
+      <button
+        onClick={() => navigate('/notifications')}
+        className="btn-secondary flex items-center gap-2"
+      >
+        Respond to Request
+      </button>
+    );
+  }
+
+  if (isPendingOutgoing) {
     return (
       <button
         disabled

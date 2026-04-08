@@ -1,13 +1,20 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter for Gmail
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
+const getTransporter = () => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    const error = new Error('EMAIL_USER and EMAIL_PASSWORD must be configured');
+    error.code = 'EMAIL_CONFIG_ERROR';
+    throw error;
   }
-});
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
+    }
+  });
+};
 
 // Generate 6-digit OTP
 const generateOTP = () => {
@@ -17,6 +24,7 @@ const generateOTP = () => {
 // Send OTP email
 const sendOTPEmail = async (email, otp, username) => {
   try {
+    const transporter = getTransporter();
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
@@ -68,6 +76,7 @@ const sendOTPEmail = async (email, otp, username) => {
 // Send welcome email after successful verification
 const sendWelcomeEmail = async (email, username) => {
   try {
+    const transporter = getTransporter();
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
@@ -132,6 +141,7 @@ const sendWelcomeEmail = async (email, username) => {
 // Send connection request notification email
 const sendConnectionRequestEmail = async (toEmail, toName, fromName, message = '') => {
   try {
+    const transporter = getTransporter();
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: toEmail,
@@ -189,6 +199,7 @@ const sendConnectionRequestEmail = async (toEmail, toName, fromName, message = '
 // Send connection accepted notification email
 const sendConnectionAcceptedEmail = async (toEmail, toName, fromName) => {
   try {
+    const transporter = getTransporter();
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: toEmail,
