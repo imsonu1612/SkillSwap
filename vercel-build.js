@@ -1,23 +1,30 @@
 // Cross-platform build script for Vercel deployment
 const { execSync } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+
+function runStep(title, command) {
+	console.log(`\n==> ${title}`);
+	console.log(`$ ${command}`);
+	try {
+		execSync(command, { stdio: 'inherit' });
+	} catch (error) {
+		console.error(`\nStep failed: ${title}`);
+		console.error(`Command: ${command}`);
+		throw error;
+	}
+}
 
 console.log('Starting Vercel build process...');
+runStep('Node version', 'node -v');
+runStep('NPM version', 'npm -v');
 
-// Install root dependencies
-console.log('Installing root dependencies...');
-execSync('npm install --legacy-peer-deps --no-audit --no-fund', { stdio: 'inherit' });
+// Keep installs minimal in Vercel to avoid duplicate root installs and timeout risk.
+runStep(
+	'Installing client dependencies',
+	'npm --prefix client install --legacy-peer-deps --no-audit --no-fund'
+);
 
-// Install client dependencies
-console.log('Installing client dependencies...');
-const clientDir = path.join(__dirname, 'client');
-process.chdir(clientDir);
-execSync('npm install --legacy-peer-deps --no-audit --no-fund', { stdio: 'inherit' });
-
-// Build client with CI=false to prevent treating warnings as errors
-console.log('Building client application...');
+console.log('\n==> Building client application');
 process.env.CI = 'false';
-execSync('npm run build', { stdio: 'inherit' });
+runStep('Client build', 'npm --prefix client run build');
 
-console.log('Build completed successfully!');
+console.log('\nBuild completed successfully!');
