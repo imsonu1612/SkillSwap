@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "skillswap-website",
   "builds": [
     {
       "src": "server/index.js",
