@@ -4,7 +4,7 @@
   "description": "A platform for users to connect and learn skills from each other",
   "main": "server/index.js",
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
