@@ -7,13 +7,13 @@ console.log('Starting Vercel build process...');
 
 // Install root dependencies
 console.log('Installing root dependencies...');
-execSync('npm install', { stdio: 'inherit' });
+execSync('npm install --legacy-peer-deps --no-audit --no-fund', { stdio: 'inherit' });
 
 // Install client dependencies
 console.log('Installing client dependencies...');
 const clientDir = path.join(__dirname, 'client');
 process.chdir(clientDir);
-execSync('npm install', { stdio: 'inherit' });
+execSync('npm install --legacy-peer-deps --no-audit --no-fund', { stdio: 'inherit' });
 
 // Build client with CI=false to prevent treating warnings as errors
 console.log('Building client application...');
