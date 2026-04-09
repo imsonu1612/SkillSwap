@@ -1,9 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { UserCircle2, Users2, Clock, MessageCircle, Bell } from 'lucide-react';
+import { Users2, Clock, MessageCircle, Bell } from 'lucide-react';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
+
+const DASHBOARD_CACHE_KEY = 'dashboard_cache_v1';
+const DASHBOARD_CACHE_TTL_MS = 2 * 60 * 1000;
+
+const getCachedDashboardData = () => {
+  try {
+    const cachedRaw = localStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (!cachedRaw) {
+      return null;
+    }
+    const cached = JSON.parse(cachedRaw);
+    if (!cached?.data || !cached?.cachedAt || !cached?.userId) {
+      return null;
+    }
+    return cached;
+  } catch (error) {
+    return null;
+  }
+};
+
+const setCachedDashboardData = (userId, data) => {
+  localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify({
+    userId,
+    data,
+    cachedAt: Date.now()
+  }));
+};
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -24,10 +51,29 @@ const Dashboard = () => {
       return;
     }
 
+    const cached = getCachedDashboardData();
+    const isCacheForCurrentUser = cached?.userId === user._id;
+    const hasCachedData = Boolean(isCacheForCurrentUser && cached?.data);
+
+    if (hasCachedData) {
+      setConnections(cached.data.connections || []);
+      setActivity(cached.data.activity || []);
+      setUnreadMessages(cached.data.unreadMessages || 0);
+      setUnreadRequests(cached.data.unreadRequests || 0);
+      setLoading(false);
+
+      const isCacheFresh = Date.now() - cached.cachedAt < DASHBOARD_CACHE_TTL_MS;
+      if (isCacheFresh) {
+        return;
+      }
+    }
+
     const fetchDashboardData = async (retryCount = 0) => {
       try {
         setError(null);
-        setLoading(true);
+        if (!hasCachedData) {
+          setLoading(true);
+        }
 
         const [
           connectionsRes, 
@@ -41,10 +87,18 @@ const Dashboard = () => {
           axios.get('/api/connections/requests')
         ]);
 
-        setConnections(connectionsRes.data.connections);
-        setActivity(activityRes.data.activity);
-        setUnreadMessages(unreadMsgRes.data.unreadCount);
-        setUnreadRequests(requestsRes.data.requests.length);
+        const nextData = {
+          connections: connectionsRes.data.connections,
+          activity: activityRes.data.activity,
+          unreadMessages: unreadMsgRes.data.unreadCount,
+          unreadRequests: requestsRes.data.requests.length
+        };
+
+        setConnections(nextData.connections);
+        setActivity(nextData.activity);
+        setUnreadMessages(nextData.unreadMessages);
+        setUnreadRequests(nextData.unreadRequests);
+        setCachedDashboardData(user._id, nextData);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -54,6 +108,11 @@ const Dashboard = () => {
           setTimeout(() => {
             fetchDashboardData(retryCount + 1);
           }, 500);
+          return;
+        }
+
+        if (hasCachedData && err.response?.status === 401) {
+          setLoading(false);
           return;
         }
 

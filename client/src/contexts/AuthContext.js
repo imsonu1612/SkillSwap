@@ -3,6 +3,37 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
+const AUTH_USER_CACHE_KEY = 'auth_user_cache';
+const AUTH_USER_CACHE_TTL_MS = 5 * 60 * 1000;
+
+const getCachedAuthUser = () => {
+  try {
+    const cachedRaw = localStorage.getItem(AUTH_USER_CACHE_KEY);
+    if (!cachedRaw) {
+      return null;
+    }
+
+    const cached = JSON.parse(cachedRaw);
+    if (!cached?.user || !cached?.cachedAt) {
+      return null;
+    }
+
+    return cached;
+  } catch (error) {
+    return null;
+  }
+};
+
+const setCachedAuthUser = (user) => {
+  localStorage.setItem(AUTH_USER_CACHE_KEY, JSON.stringify({
+    user,
+    cachedAt: Date.now()
+  }));
+};
+
+const clearCachedAuthUser = () => {
+  localStorage.removeItem(AUTH_USER_CACHE_KEY);
+};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -13,7 +44,10 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const cached = getCachedAuthUser();
+    return cached?.user || null;
+  });
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
@@ -48,18 +82,36 @@ export const AuthProvider = ({ children }) => {
   // Check if user is authenticated on app load
   useEffect(() => {
     const checkAuth = async () => {
-      if (token) {
-        try {
-          const response = await axios.get('/api/auth/me');
-          setUser(response.data.user);
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          localStorage.removeItem('token');
-          setToken(null);
-          setUser(null);
+      if (!token) {
+        clearCachedAuthUser();
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      const cached = getCachedAuthUser();
+      if (cached?.user) {
+        setUser(cached.user);
+        const isFresh = Date.now() - cached.cachedAt < AUTH_USER_CACHE_TTL_MS;
+        if (isFresh) {
+          setLoading(false);
+          return;
         }
       }
-      setLoading(false);
+
+      try {
+        const response = await axios.get('/api/auth/me');
+        setUser(response.data.user);
+        setCachedAuthUser(response.data.user);
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        localStorage.removeItem('token');
+        clearCachedAuthUser();
+        setToken(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     checkAuth();
@@ -73,6 +125,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userData);
+      setCachedAuthUser(userData);
       
       toast.success('Login successful!');
       return { success: true };
@@ -117,6 +170,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userInfo);
+      setCachedAuthUser(userInfo);
       
       return { success: true };
     } catch (error) {
@@ -140,6 +194,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('token');
+      clearCachedAuthUser();
       setToken(null);
       setUser(null);
       toast.success('Logged out successfully');
@@ -148,6 +203,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
+    setCachedAuthUser(updatedUser);
   };
 
   const value = {
