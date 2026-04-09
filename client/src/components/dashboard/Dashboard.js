@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { UserCircle2, Users2, Clock, MessageCircle, Bell } from 'lucide-react';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Dashboard = () => {
+  const { user, loading: authLoading } = useAuth();
   const [connections, setConnections] = useState([]);
   const [activity, setActivity] = useState([]);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -13,8 +15,20 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchDashboardData = async (retryCount = 0) => {
       try {
+        setError(null);
+        setLoading(true);
+
         const [
           connectionsRes, 
           activityRes, 
@@ -34,13 +48,26 @@ const Dashboard = () => {
         setLoading(false);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
-        setError('Failed to load dashboard data');
+
+        // Transient auth race can happen right after login; retry once.
+        if (err.response?.status === 401 && retryCount < 1) {
+          setTimeout(() => {
+            fetchDashboardData(retryCount + 1);
+          }, 500);
+          return;
+        }
+
+        if (err.response?.status === 401) {
+          setError('Session not ready. Please refresh once or log in again.');
+        } else {
+          setError('Failed to load dashboard data');
+        }
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [authLoading, user]);
 
   if (loading) {
     return (
