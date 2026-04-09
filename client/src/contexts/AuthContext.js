@@ -17,6 +17,25 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
+  // Attach latest token to every request to avoid startup race conditions.
+  useEffect(() => {
+    const interceptor = axios.interceptors.request.use(
+      (config) => {
+        const storedToken = localStorage.getItem('token');
+        if (storedToken) {
+          config.headers = config.headers || {};
+          config.headers.Authorization = `Bearer ${storedToken}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    return () => {
+      axios.interceptors.request.eject(interceptor);
+    };
+  }, []);
+
   // Set up axios defaults
   useEffect(() => {
     if (token) {

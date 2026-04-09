@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { UserCircle2, Users2, Clock, MessageCircle, Bell } from 'lucide-react';
+import { Users2, Clock, MessageCircle, Bell } from 'lucide-react';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Dashboard = () => {
+  const { user, loading: authLoading } = useAuth();
   const [connections, setConnections] = useState([]);
   const [activity, setActivity] = useState([]);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -13,8 +15,20 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     const fetchDashboardData = async () => {
       try {
+        setError(null);
+        setLoading(true);
+
         const [
           connectionsRes, 
           activityRes, 
@@ -34,13 +48,17 @@ const Dashboard = () => {
         setLoading(false);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
-        setError('Failed to load dashboard data');
+        if (err.response?.status === 401) {
+          setError('Session not ready. Please refresh once or re-login.');
+        } else {
+          setError('Failed to load dashboard data');
+        }
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [authLoading, user]);
 
   if (loading) {
     return (
