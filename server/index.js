@@ -35,8 +35,29 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // CORS configuration
+const configuredOrigins = (process.env.CLIENT_URL || 'http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow non-browser requests or same-origin requests with no Origin header.
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (configuredOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow Vercel preview and production domains.
+    if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 
@@ -44,24 +65,46 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// MongoDB Connection
-console.log('🔍 Attempting to connect to MongoDB...');
-console.log('🔍 MONGODB_URI:', process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 50) + '...' : 'NOT SET');
-console.log('🔍 All env vars:', Object.keys(process.env).filter(key => key.includes('MONGODB') || key.includes('JWT') || key.includes('EMAIL')));
+let connectionPromise = null;
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/skillswap', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 30000, // 30 seconds
-  socketTimeoutMS: 45000, // 45 seconds
-})
-.then(() => {
-  console.log('✅ Connected to MongoDB successfully!');
-  console.log('📊 Database:', mongoose.connection.db.databaseName);
-})
-.catch(err => {
-  console.error('❌ MongoDB connection error:', err.message);
-  console.error('🔍 Error details:', err);
+const connectToDatabase = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+
+  const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/skillswap';
+
+  connectionPromise = mongoose.connect(mongoUri, {
+    serverSelectionTimeoutMS: 30000,
+    socketTimeoutMS: 45000
+  })
+    .then(() => {
+      console.log('Connected to MongoDB');
+      return mongoose.connection;
+    })
+    .catch((error) => {
+      connectionPromise = null;
+      console.error('MongoDB connection error:', error.message);
+      throw error;
+    });
+
+  return connectionPromise;
+};
+
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectToDatabase();
+    next();
+  } catch (error) {
+    res.status(503).json({
+      error: 'Database unavailable',
+      message: 'Service temporarily unavailable. Please try again shortly.'
+    });
+  }
 });
 
 // Routes
@@ -94,8 +137,17 @@ app.use('*', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 SkillSwap server running on port ${PORT}`);
-  console.log(`📱 Frontend URL: ${process.env.CLIENT_URL || 'http://localhost:3000'}`);
-  console.log(`🔗 API URL: http://localhost:${PORT}/api`);
-}); 
+if (!process.env.VERCEL) {
+  connectToDatabase()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`SkillSwap server running on port ${PORT}`);
+      });
+    })
+    .catch((error) => {
+      console.error('Failed to start server:', error.message);
+      process.exit(1);
+    });
+}
+
+module.exports = app;

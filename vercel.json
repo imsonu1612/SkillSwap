@@ -18,19 +18,14 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "server/index.js"
+      "dest": "/server/index.js"
     },
     {
-      "src": "/static/(.*)",
-      "dest": "client/build/static/$1"
-    },
-    {
-      "src": "/(.+\\.[a-zA-Z]+)$",
-      "dest": "client/build/$1"
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "client/build/index.html"
+      "dest": "/index.html"
     }
   ],
   "env": {
