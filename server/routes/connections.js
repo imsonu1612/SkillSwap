@@ -138,6 +138,13 @@ router.post('/request', authenticateToken, [
     });
 
   } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(400).json({
+        error: 'Request already sent',
+        message: 'A pending request already exists for this user pair'
+      });
+    }
+
     console.error('Connection request error:', error);
     res.status(500).json({
       error: 'Failed to send connection request',
