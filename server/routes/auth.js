@@ -9,6 +9,12 @@ const router = express.Router();
 
 // Generate JWT Token
 const generateToken = (userId) => {
+  if (!process.env.JWT_SECRET) {
+    const error = new Error('JWT secret is not configured');
+    error.code = 'JWT_SECRET_MISSING';
+    throw error;
+  }
+
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
@@ -313,7 +319,17 @@ router.post('/login', [
     }
 
     // Check password
-    const isPasswordValid = await user.comparePassword(password);
+    let isPasswordValid = false;
+    try {
+      isPasswordValid = await user.comparePassword(password);
+    } catch (passwordError) {
+      console.error('Password comparison error:', passwordError);
+      return res.status(401).json({
+        error: 'Invalid credentials',
+        message: 'Email or password is incorrect'
+      });
+    }
+
     if (!isPasswordValid) {
       return res.status(401).json({
         error: 'Invalid credentials',
@@ -331,12 +347,23 @@ router.post('/login', [
       });
     }
 
-    // Update last active
-    user.lastActive = new Date();
-    await user.save();
-
     // Generate token
-    const token = generateToken(user._id);
+    let token;
+    try {
+      token = generateToken(user._id);
+    } catch (tokenError) {
+      console.error('Token generation error:', tokenError);
+      return res.status(503).json({
+        error: 'Authentication unavailable',
+        message: 'Server authentication configuration is unavailable'
+      });
+    }
+
+    // Update last active without blocking a successful login.
+    user.lastActive = new Date();
+    user.save().catch((saveError) => {
+      console.error('Failed to update lastActive after login:', saveError);
+    });
 
     res.json({
       message: 'Login successful',

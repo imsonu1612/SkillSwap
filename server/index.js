@@ -40,6 +40,26 @@ const configuredOrigins = (process.env.CLIENT_URL || 'http://localhost:3000')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const isAllowedOrigin = (origin) => {
+  if (configuredOrigins.includes(origin)) {
+    return true;
+  }
+
+  if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+    return true;
+  }
+
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+    return true;
+  }
+
+  if (/^https:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+    return true;
+  }
+
+  return false;
+};
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow non-browser requests or same-origin requests with no Origin header.
@@ -47,12 +67,13 @@ app.use(cors({
       return callback(null, true);
     }
 
-    if (configuredOrigins.includes(origin)) {
+    // Development should not be blocked by host/origin mismatches between localhost,
+    // 127.0.0.1, the LAN IP, or browser tooling.
+    if (process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
 
-    // Allow Vercel preview and production domains.
-    if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+    if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
 

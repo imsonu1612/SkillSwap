@@ -8,6 +8,7 @@ import Register from './components/auth/Register';
 import OTPVerification from './components/auth/OTPVerification';
 import Dashboard from './components/dashboard/Dashboard';
 import Profile from './components/profile/Profile';
+import UserProfileView from './components/profile/UserProfileView';
 import SearchUsers from './components/search/SearchUsers';
 import Notifications from './components/connections/Notifications';
 import ConnectionsList from './components/connections/ConnectionsList';
@@ -116,6 +117,14 @@ function App() {
                   <div>
                     <Navbar />
                     <SearchUsers />
+                  </div>
+                </ProtectedRoute>
+              } />
+              <Route path="/user/:userId" element={
+                <ProtectedRoute>
+                  <div>
+                    <Navbar />
+                    <UserProfileView />
                   </div>
                 </ProtectedRoute>
               } />

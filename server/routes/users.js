@@ -5,6 +5,31 @@ const User = require('../models/User');
 
 const router = express.Router();
 
+const DEFAULT_SUGGESTION_LIMIT = 6;
+const MAX_SUGGESTION_LIMIT = 12;
+
+const parsePositiveInt = (value, fallback) => {
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const getRequesterUserId = (req) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded.userId || null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const toSafeRegex = (value) => new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
 // Middleware to verify JWT token
 const authenticateToken = async (req, res, next) => {
   try {
@@ -171,35 +196,128 @@ router.delete('/skills/:skillId', authenticateToken, async (req, res) => {
 // Search users by skills
 router.get('/search', async (req, res) => {
   try {
-    const { skill, location, limit = 20, page = 1 } = req.query;
-    const skip = (page - 1) * limit;
+    const { skill, location, limit = DEFAULT_SUGGESTION_LIMIT, page = 1 } = req.query;
+    const trimmedSkill = (skill || '').trim();
+    const trimmedLocation = (location || '').trim();
+    const hasSkill = Boolean(trimmedSkill);
+    const hasLocation = Boolean(trimmedLocation);
+    const safeLimit = Math.min(parsePositiveInt(limit, DEFAULT_SUGGESTION_LIMIT), MAX_SUGGESTION_LIMIT);
+    const safePage = parsePositiveInt(page, 1);
+    const skip = (safePage - 1) * safeLimit;
+    const requesterUserId = getRequesterUserId(req);
 
-    let query = {};
+    const query = {};
 
-    if (skill) {
-      query['skills.name'] = { $regex: skill, $options: 'i' };
+    query.isVerified = true;
+
+    if (requesterUserId) {
+      query._id = { $ne: requesterUserId };
     }
 
-    if (location) {
-      query.location = { $regex: location, $options: 'i' };
+    if (hasSkill) {
+      query['skills.name'] = { $regex: trimmedSkill, $options: 'i' };
+    }
+
+    if (!hasSkill && hasLocation) {
+      query.location = { $regex: trimmedLocation, $options: 'i' };
+    }
+
+    if (hasSkill) {
+      const aggregation = [
+        { $match: query },
+        {
+          $addFields: {
+            matchPriority: hasLocation
+              ? {
+                  $cond: [
+                    {
+                      $regexMatch: {
+                        input: { $ifNull: ['$location', ''] },
+                        regex: toSafeRegex(trimmedLocation)
+                      }
+                    },
+                    0,
+                    1
+                  ]
+                }
+              : 1
+          }
+        },
+        { $sort: { matchPriority: 1, lastActive: -1, createdAt: -1 } },
+        {
+          $facet: {
+            results: [
+              { $skip: skip },
+              { $limit: safeLimit },
+              {
+                $project: {
+                  password: 0,
+                  otp: 0
+                }
+              }
+            ],
+            totalCount: [
+              { $count: 'count' }
+            ]
+          }
+        }
+      ];
+
+      const [aggregated] = await User.aggregate(aggregation);
+      const users = aggregated?.results || [];
+      const total = aggregated?.totalCount?.[0]?.count || 0;
+
+      const bestMatches = hasLocation
+        ? users.filter((user) => user.matchPriority === 0).map((user) => {
+            const { matchPriority, ...rest } = user;
+            return rest;
+          })
+        : [];
+
+      const otherMatches = users
+        .filter((user) => !hasLocation || user.matchPriority === 1)
+        .map((user) => {
+          const { matchPriority, ...rest } = user;
+          return rest;
+        });
+
+      const cleanUsers = users.map((user) => {
+        const { matchPriority, ...rest } = user;
+        return rest;
+      });
+
+      return res.json({
+        users: cleanUsers,
+        bestMatches,
+        otherMatches,
+        pagination: {
+          currentPage: safePage,
+          totalPages: Math.ceil(total / safeLimit),
+          totalUsers: total,
+          hasNext: skip + users.length < total,
+          hasPrev: safePage > 1,
+          limit: safeLimit
+        }
+      });
     }
 
     const users = await User.find(query)
-      .select('-password')
-      .limit(parseInt(limit))
+      .select('-password -otp')
+      .limit(safeLimit)
       .skip(skip)
-      .sort({ lastActive: -1 });
+      .sort({ lastActive: -1, createdAt: -1 });
 
     const total = await User.countDocuments(query);
 
     res.json({
       users,
       pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / limit),
+        currentPage: safePage,
+        totalPages: Math.ceil(total / safeLimit),
         totalUsers: total,
         hasNext: skip + users.length < total,
-        hasPrev: page > 1
+        hasPrev: safePage > 1,
+        limit: safeLimit
       }
     });
 
@@ -215,7 +333,7 @@ router.get('/search', async (req, res) => {
 // Get user by ID (public profile)
 router.get('/:userId', async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).select('-password');
+    const user = await User.findById(req.params.userId).select('-password -otp');
     
     if (!user) {
       return res.status(404).json({

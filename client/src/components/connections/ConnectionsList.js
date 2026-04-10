@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, MessageCircle, User } from 'lucide-react';
+import { Users, User, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const ConnectionsList = () => {
@@ -32,8 +32,8 @@ const ConnectionsList = () => {
     }
   };
 
-  const handleChat = (userId, userName) => {
-    navigate(`/chat/${userId}`, { state: { userName } });
+  const openProfile = (userId, fromConnections = true) => {
+    navigate(`/user/${userId}`, { state: { fromConnections } });
   };
 
   if (isLoading) {
@@ -72,9 +72,11 @@ const ConnectionsList = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {connections.map((connection) => (
-            <div
+            <button
               key={connection.id}
-              className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+              type="button"
+              onClick={() => openProfile(connection.user._id)}
+              className="w-full text-left bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0">
@@ -118,14 +120,18 @@ const ConnectionsList = () => {
 
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <button
-                  onClick={() => handleChat(connection.user._id, `${connection.user.firstName} ${connection.user.lastName}`)}
-                  className="w-full btn-primary flex items-center justify-center gap-2"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openProfile(connection.user._id);
+                  }}
+                  className="w-full btn-secondary flex items-center justify-center gap-2"
                 >
-                  <MessageCircle className="h-4 w-4" />
-                  Start Chat
+                  <Eye className="h-4 w-4" />
+                  View Profile
                 </button>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
