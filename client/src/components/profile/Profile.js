@@ -75,23 +75,23 @@ const Profile = () => {
   const getSkillLevelColor = (level) => {
     switch (level) {
       case 'beginner':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300';
       case 'intermediate':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300';
       case 'advanced':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300';
       case 'expert':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-colors duration-300">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
-        <p className="text-gray-600">Manage your profile and skills</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile</h1>
+        <p className="text-gray-600 dark:text-gray-300">Manage your profile and skills</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -99,7 +99,7 @@ const Profile = () => {
         <div className="lg:col-span-2">
           <div className="card">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Profile Information</h2>
               <button
                 onClick={() => setIsEditing(!isEditing)}
                 className="btn-secondary flex items-center space-x-2"
@@ -122,7 +122,7 @@ const Profile = () => {
               <form onSubmit={handleSubmit(handleProfileUpdate)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                       First Name
                     </label>
                     <input
@@ -135,7 +135,7 @@ const Profile = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                       Last Name
                     </label>
                     <input
@@ -149,12 +149,12 @@ const Profile = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                     Location
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <MapPin className="h-5 w-5 text-gray-400" />
+                      <MapPin className="h-5 w-5 text-gray-400 dark:text-gray-300" />
                     </div>
                     <input
                       {...register('location')}
@@ -165,7 +165,7 @@ const Profile = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                     Bio
                   </label>
                   <textarea
@@ -197,55 +197,55 @@ const Profile = () => {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                       First Name
                     </label>
-                    <p className="text-gray-900">{user?.firstName}</p>
+                    <p className="text-gray-900 dark:text-white">{user?.firstName}</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                       Last Name
                     </label>
-                    <p className="text-gray-900">{user?.lastName}</p>
+                    <p className="text-gray-900 dark:text-white">{user?.lastName}</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                     Email
                   </label>
                   <div className="flex items-center space-x-2">
-                    <Mail className="h-4 w-4 text-gray-400" />
-                    <p className="text-gray-900">{user?.email}</p>
+                    <Mail className="h-4 w-4 text-gray-400 dark:text-gray-300" />
+                    <p className="text-gray-900 dark:text-white">{user?.email}</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                     Username
                   </label>
-                  <p className="text-gray-900">@{user?.username}</p>
+                  <p className="text-gray-900 dark:text-white">@{user?.username}</p>
                 </div>
 
                 {user?.location && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                       Location
                     </label>
                     <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      <p className="text-gray-900">{user.location}</p>
+                      <MapPin className="h-4 w-4 text-gray-400 dark:text-gray-300" />
+                      <p className="text-gray-900 dark:text-white">{user.location}</p>
                     </div>
                   </div>
                 )}
 
                 {user?.bio && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                       Bio
                     </label>
-                    <p className="text-gray-900">{user.bio}</p>
+                    <p className="text-gray-900 dark:text-gray-200">{user.bio}</p>
                   </div>
                 )}
               </div>
@@ -255,7 +255,7 @@ const Profile = () => {
           {/* Skills Section */}
           <div className="card mt-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Your Skills</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Your Skills</h2>
               <button
                 onClick={() => setIsAddingSkill(!isAddingSkill)}
                 className="btn-primary flex items-center space-x-2"
@@ -267,11 +267,11 @@ const Profile = () => {
 
             {/* Add Skill Form */}
             {isAddingSkill && (
-              <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Skill</h3>
+              <div className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 transition-colors duration-300">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Add New Skill</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                       Skill Name
                     </label>
                     <input
@@ -284,7 +284,7 @@ const Profile = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                       Skill Level
                     </label>
                     <select
@@ -301,7 +301,7 @@ const Profile = () => {
                 </div>
 
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                     Description (optional)
                   </label>
                   <textarea
@@ -334,34 +334,34 @@ const Profile = () => {
             {user?.skills && user.skills.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {user.skills.map((skill, index) => (
-                  <div key={skill._id || index} className="border border-gray-200 rounded-lg p-4">
+                  <div key={skill._id || index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 transition-colors duration-300">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-gray-900">{skill.name}</h3>
+                      <h3 className="font-medium text-gray-900 dark:text-white">{skill.name}</h3>
                       <div className="flex items-center space-x-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSkillLevelColor(skill.level)}`}>
                           {skill.level}
                         </span>
                         <button
                           onClick={() => handleRemoveSkill(skill._id)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
                     {skill.description && (
-                      <p className="text-sm text-gray-600">{skill.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{skill.description}</p>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8">
-                <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <Star className="h-6 w-6 text-gray-400" />
+                <div className="mx-auto h-12 w-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                  <Star className="h-6 w-6 text-gray-400 dark:text-gray-300" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No skills added yet</h3>
-                <p className="text-gray-600 mb-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No skills added yet</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
                   Add your skills to start connecting with others who share your interests.
                 </p>
                 <button
@@ -380,20 +380,20 @@ const Profile = () => {
           {/* Profile Card */}
           <div className="card">
             <div className="text-center">
-              <div className="mx-auto h-24 w-24 bg-primary-100 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto h-24 w-24 bg-primary-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
                 <User className="h-12 w-12 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-1">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                 {user?.firstName} {user?.lastName}
               </h3>
-              <p className="text-gray-600 mb-2">@{user?.username}</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-2">@{user?.username}</p>
               {user?.location && (
-                <div className="flex items-center justify-center text-gray-500 mb-4">
+                <div className="flex items-center justify-center text-gray-500 dark:text-gray-300 mb-4">
                   <MapPin className="h-4 w-4 mr-1" />
                   <span className="text-sm">{user.location}</span>
                 </div>
               )}
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 Member since {new Date(user?.createdAt).toLocaleDateString()}
               </div>
             </div>
@@ -401,19 +401,19 @@ const Profile = () => {
 
           {/* Stats */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Stats</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Profile Stats</h3>
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Total Skills</span>
-                <span className="font-medium">{user?.skills?.length || 0}</span>
+                <span className="text-gray-600 dark:text-gray-300">Total Skills</span>
+                <span className="font-medium text-gray-900 dark:text-white">{user?.skills?.length || 0}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Profile Views</span>
-                <span className="font-medium">24</span>
+                <span className="text-gray-600 dark:text-gray-300">Profile Views</span>
+                <span className="font-medium text-gray-900 dark:text-white">24</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Connections</span>
-                <span className="font-medium">12</span>
+                <span className="text-gray-600 dark:text-gray-300">Connections</span>
+                <span className="font-medium text-gray-900 dark:text-white">12</span>
               </div>
             </div>
           </div>

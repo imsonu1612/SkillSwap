@@ -94,15 +94,15 @@ const SearchUsers = () => {
   const getSkillLevelColor = (level) => {
     switch (level) {
       case 'beginner':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300';
       case 'intermediate':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300';
       case 'advanced':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300';
       case 'expert':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
 
@@ -120,7 +120,7 @@ const SearchUsers = () => {
           navigate(`/user/${user._id}`);
         }
       }}
-      className="card w-full text-left hover:shadow-lg transition-all duration-200 border-gray-200/80"
+      className="card w-full text-left hover:shadow-lg transition-all duration-300 border-gray-200/80 dark:border-gray-700"
     >
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-4 min-w-0">
@@ -129,33 +129,33 @@ const SearchUsers = () => {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-gray-900 text-base truncate">
+              <h3 className="font-semibold text-gray-900 dark:text-white text-base truncate">
                 {user.firstName} {user.lastName}
               </h3>
               {showSuggestedTag && (
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary-50 dark:bg-gray-700 text-primary-700 dark:text-primary-300">
                   Suggested
                 </span>
               )}
             </div>
-            <p className="text-sm text-gray-500 truncate">@{user.username}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300 truncate">@{user.username}</p>
           </div>
         </div>
       </div>
 
       <div className="space-y-3">
         {user.location && (
-          <div className="flex items-center text-gray-500">
-            <MapPin className="h-4 w-4 mr-1" />
+          <div className="flex items-center text-gray-500 dark:text-gray-300">
+            <MapPin className="h-4 w-4 mr-1 text-gray-500 dark:text-gray-300" />
             <span className="text-sm">{user.location}</span>
           </div>
         )}
 
-        {user.bio && <p className="text-gray-600 text-sm line-clamp-2">{user.bio}</p>}
+        {user.bio && <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">{user.bio}</p>}
 
         {user.skills && user.skills.length > 0 && (
           <div>
-            <h4 className="text-xs uppercase tracking-wide font-semibold text-gray-500 mb-2">Skills</h4>
+            <h4 className="text-xs uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 mb-2">Skills</h4>
             <div className="flex flex-wrap gap-1.5">
               {user.skills.slice(0, 3).map((skill, index) => (
                 <span
@@ -166,7 +166,7 @@ const SearchUsers = () => {
                 </span>
               ))}
               {user.skills.length > 3 && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">
                   +{user.skills.length - 3}
                 </span>
               )}
@@ -175,8 +175,8 @@ const SearchUsers = () => {
         )}
       </div>
 
-      <div className="mt-5 pt-4 border-t border-gray-200 flex items-center justify-between gap-3">
-        <p className="text-xs text-gray-500">View profile or connect to start a conversation.</p>
+      <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
+        <p className="text-xs text-gray-500 dark:text-gray-400">View profile or connect to start a conversation.</p>
         <div onClick={(event) => event.stopPropagation()}>
           <ConnectButton
             targetUserId={user._id}
@@ -189,7 +189,7 @@ const SearchUsers = () => {
   );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-colors duration-300">
       <div className="mb-8 rounded-3xl bg-gradient-to-br from-primary-600 via-primary-700 to-slate-900 text-white p-6 sm:p-8 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 h-32 w-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4" />
         <div className="absolute bottom-0 left-0 h-24 w-24 bg-cyan-300/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/4" />
@@ -216,28 +216,28 @@ const SearchUsers = () => {
         <form onSubmit={handleSubmit(handleSearch)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Skill</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">Skill</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
+                  <Search className="h-5 w-5 text-gray-400 dark:text-gray-300" />
                 </div>
                 <input
                   {...register('skill')}
-                  className="input-field pl-10"
+                  className="input-field pl-10 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   placeholder="Search by skill (e.g., JavaScript, Python)"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">Location</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MapPin className="h-5 w-5 text-gray-400" />
+                  <MapPin className="h-5 w-5 text-gray-400 dark:text-gray-300" />
                 </div>
                 <input
                   {...register('location')}
-                  className="input-field pl-10"
+                  className="input-field pl-10 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   placeholder="Search by location"
                 />
               </div>
@@ -272,25 +272,25 @@ const SearchUsers = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               {loading ? 'Finding people...' : users.length > 0 ? 'Suggested people' : 'No people found'}
             </h2>
             {activeQuery.skill || activeQuery.location ? (
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                 Showing results for
                 {activeQuery.skill && <span className="font-medium"> "{activeQuery.skill}"</span>}
                 {activeQuery.skill && activeQuery.location && ' and '}
                 {activeQuery.location && <span className="font-medium"> "{activeQuery.location}"</span>}
               </p>
             ) : (
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                 Showing a compact set of suggestions instead of the full user directory.
               </p>
             )}
           </div>
 
           {pagination.totalUsers > 0 && (
-            <div className="text-sm text-gray-600 flex items-center gap-2">
+            <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
               <span>{users.length} of {pagination.totalUsers}</span>
               <span className="hidden sm:inline">•</span>
               <span>Page {pagination.currentPage} of {pagination.totalPages}</span>
@@ -303,11 +303,11 @@ const SearchUsers = () => {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="card animate-pulse">
                 <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 bg-gray-200 rounded-full" />
+                  <div className="h-14 w-14 bg-gray-200 dark:bg-gray-700 rounded-full" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-2/3" />
-                    <div className="h-3 bg-gray-200 rounded w-1/2" />
-                    <div className="h-3 bg-gray-200 rounded w-3/4" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
                   </div>
                 </div>
               </div>
@@ -319,15 +319,15 @@ const SearchUsers = () => {
               <div className="space-y-8">
                 <section>
                   <div className="mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">Best Matches (Skill + Location)</h3>
-                    <p className="text-sm text-gray-600">People matching both your skill and location query.</p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Best Matches (Skill + Location)</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">People matching both your skill and location query.</p>
                   </div>
                   {bestMatches.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
                       {bestMatches.map((user) => renderUserCard(user))}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-600">
+                    <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 text-sm text-gray-600 dark:text-gray-300 transition-colors duration-300">
                       No exact skill + location matches on this page yet.
                     </div>
                   )}
@@ -335,15 +335,15 @@ const SearchUsers = () => {
 
                 <section>
                   <div className="mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">Other Matches (Skill Only)</h3>
-                    <p className="text-sm text-gray-600">People matching your skill, even if location differs.</p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Other Matches (Skill Only)</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">People matching your skill, even if location differs.</p>
                   </div>
                   {otherMatches.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
                       {otherMatches.map((user) => renderUserCard(user))}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-600">
+                    <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 text-sm text-gray-600 dark:text-gray-300 transition-colors duration-300">
                       No additional skill-only matches on this page.
                     </div>
                   )}
@@ -364,7 +364,7 @@ const SearchUsers = () => {
                 >
                   {loadingMore ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700" />
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700 dark:border-gray-200" />
                       Loading more...
                     </>
                   ) : (
@@ -378,12 +378,12 @@ const SearchUsers = () => {
             )}
           </>
         ) : (
-          <div className="text-center py-12 rounded-3xl bg-white border border-dashed border-gray-200">
-            <div className="mx-auto h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <Users className="h-8 w-8 text-gray-400" />
+          <div className="text-center py-12 rounded-3xl bg-white dark:bg-gray-800 border border-dashed border-gray-200 dark:border-gray-700 transition-colors duration-300">
+            <div className="mx-auto h-16 w-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+              <Users className="h-8 w-8 text-gray-400 dark:text-gray-300" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-            <p className="text-gray-600 mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No users found</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
               Try adjusting your search criteria or refresh the suggested people list.
             </p>
             <button onClick={() => fetchPeople({ page: 1, append: false })} className="btn-primary">

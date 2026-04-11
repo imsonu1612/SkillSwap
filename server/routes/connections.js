@@ -306,7 +306,9 @@ router.get('/', authenticateToken, async (req, res) => {
         { user1: req.userId },
         { user2: req.userId }
       ]
-    }).populate('user1 user2', 'firstName lastName username avatar');
+    })
+      .sort({ connectedAt: -1 })
+      .populate('user1 user2', 'firstName lastName username avatar location skills lastActive');
 
     const formattedConnections = connections.map(conn => ({
       id: conn._id,

@@ -3,9 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import OTPVerification from './components/auth/OTPVerification';
+import Home from './components/home/Home';
 import Dashboard from './components/dashboard/Dashboard';
 import Profile from './components/profile/Profile';
 import UserProfileView from './components/profile/UserProfileView';
@@ -43,22 +45,25 @@ const PublicRoute = ({ children }) => {
     );
   }
   
-  return user ? <Navigate to="/dashboard" replace /> : children;
+  return user ? <Navigate to="/home" replace /> : children;
 };
 
-function App() {
+const AppContent = () => {
+  const { isDark } = useTheme();
+
   return (
     <AuthProvider>
       <NotificationProvider>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <div className="min-h-screen bg-gray-50">
+          <div className="min-h-screen bg-gray-50 transition-all duration-300 dark:bg-gray-950 dark:text-gray-100">
             <Toaster
               position="top-right"
               toastOptions={{
                 duration: 4000,
                 style: {
-                  background: '#363636',
+                  background: isDark ? '#111827' : '#363636',
                   color: '#fff',
+                  border: isDark ? '1px solid #374151' : 'none'
                 },
                 success: {
                   duration: 3000,
@@ -76,7 +81,7 @@ function App() {
                 },
               }}
             />
-            
+
             <Routes>
               {/* Public Routes */}
               <Route path="/login" element={
@@ -94,8 +99,16 @@ function App() {
                   <OTPVerification />
                 </PublicRoute>
               } />
-              
+
               {/* Protected Routes */}
+              <Route path="/home" element={
+                <ProtectedRoute>
+                  <div>
+                    <Navbar />
+                    <Home />
+                  </div>
+                </ProtectedRoute>
+              } />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <div>
@@ -149,15 +162,23 @@ function App() {
                   <ChatRoom />
                 </ProtectedRoute>
               } />
-              
+
               {/* Default redirect */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<Navigate to="/home" replace />} />
+              <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
           </div>
         </Router>
       </NotificationProvider>
     </AuthProvider>
+  );
+};
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 

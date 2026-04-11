@@ -72,6 +72,11 @@ const ChatRoom = () => {
     const socket = connectSocket();
     socketRef.current = socket;
 
+    if (!socket) {
+      setIsUserOnline(false);
+      return undefined;
+    }
+
     if (token) {
       socket.auth = { token };
       if (!socket.connected) {
