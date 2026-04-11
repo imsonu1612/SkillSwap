@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, Check, X, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNotifications } from '../../contexts/NotificationContext';
@@ -8,11 +8,7 @@ const Notifications = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { setUnreadRequests } = useNotifications();
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       const response = await fetch('/api/connections/requests', {
         headers: {
@@ -33,7 +29,11 @@ const Notifications = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setUnreadRequests]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const handleAccept = async (requestId) => {
     try {

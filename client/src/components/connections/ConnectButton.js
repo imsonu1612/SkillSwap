@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Send, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -9,11 +9,7 @@ const ConnectButton = ({ targetUserId, targetUserName, onConnect }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
-  useEffect(() => {
-    checkConnectionStatus();
-  }, [targetUserId]);
-
-  const checkConnectionStatus = async () => {
+  const checkConnectionStatus = useCallback(async () => {
     try {
       const response = await fetch('/api/connections/status/' + targetUserId, {
         headers: {
@@ -26,7 +22,11 @@ const ConnectButton = ({ targetUserId, targetUserName, onConnect }) => {
     } catch (error) {
       console.error('Status check error:', error);
     }
-  };
+  }, [targetUserId]);
+
+  useEffect(() => {
+    checkConnectionStatus();
+  }, [checkConnectionStatus]);
 
   const handleConnect = async () => {
     if (!message.trim()) {

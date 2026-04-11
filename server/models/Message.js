@@ -16,6 +16,15 @@ const messageSchema = new mongoose.Schema({
     required: true,
     maxlength: [1000, 'Message cannot exceed 1000 characters']
   },
+  status: {
+    type: String,
+    enum: ['sent', 'delivered', 'seen'],
+    default: 'sent'
+  },
+  seenAt: {
+    type: Date,
+    default: null
+  },
   isRead: {
     type: Boolean,
     default: false

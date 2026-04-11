@@ -6,6 +6,7 @@ const ConnectionRequest = require('../models/ConnectionRequest');
 const Connection = require('../models/Connection');
 const Message = require('../models/Message');
 const { sendConnectionRequestEmail, sendConnectionAcceptedEmail } = require('../services/emailService');
+const { toPublicMessage, socketRoomForUser } = require('../services/socket');
 
 const router = express.Router();
 
@@ -418,7 +419,8 @@ router.post('/message', authenticateToken, [
     const message = new Message({
       sender: senderId,
       receiver: receiverId,
-      content
+      content,
+      status: 'sent'
     });
 
     await message.save();
@@ -426,16 +428,24 @@ router.post('/message', authenticateToken, [
     // Populate sender info
     await message.populate('sender', 'firstName lastName username avatar');
 
+    const io = req.app.get('io');
+    const receiverRoom = socketRoomForUser(receiverId);
+    const receiverSockets = io?.sockets?.adapter?.rooms?.get(receiverRoom);
+    const isReceiverOnline = Boolean(receiverSockets && receiverSockets.size > 0);
+
+    if (isReceiverOnline) {
+      message.status = 'delivered';
+      await message.save();
+      io.to(receiverRoom).emit('receive_message', toPublicMessage(message));
+      io.to(socketRoomForUser(senderId)).emit('message_status_update', {
+        messageId: message._id,
+        status: 'delivered'
+      });
+    }
+
     res.status(201).json({
       message: 'Message sent successfully',
-      data: {
-        id: message._id,
-        sender: message.sender.getPublicProfile(),
-        receiver: receiverId,
-        content: message.content,
-        isRead: message.isRead,
-        createdAt: message.createdAt
-      }
+      data: toPublicMessage(message)
     });
 
   } catch (error) {
@@ -478,21 +488,39 @@ router.get('/messages/:userId', authenticateToken, async (req, res) => {
     .sort({ createdAt: 1 })
     .populate('sender', 'firstName lastName username avatar');
 
-    // Mark messages as read
+    // Mark incoming messages as delivered when chat is opened.
     await Message.updateMany(
-      { sender: userId, receiver: currentUserId, isRead: false },
-      { isRead: true }
+      {
+        sender: userId,
+        receiver: currentUserId,
+        status: 'sent'
+      },
+      {
+        $set: {
+          status: 'delivered'
+        }
+      }
     );
 
     res.json({
-      messages: messages.map(msg => ({
-        id: msg._id,
-        sender: msg.sender.getPublicProfile(),
-        receiver: msg.receiver,
-        content: msg.content,
-        isRead: msg.isRead,
-        createdAt: msg.createdAt
-      }))
+      messages: messages.map((msg) => {
+        const plain = msg.toObject();
+
+        if (String(plain.sender?._id || plain.sender) === String(userId) && String(plain.receiver) === String(currentUserId) && plain.status === 'sent') {
+          plain.status = 'delivered';
+        }
+
+        return {
+          id: plain._id,
+          sender: msg.sender.getPublicProfile(),
+          receiver: plain.receiver,
+          content: plain.content,
+          status: plain.status,
+          seenAt: plain.seenAt,
+          isRead: plain.isRead,
+          createdAt: plain.createdAt
+        };
+      })
     });
 
   } catch (error) {

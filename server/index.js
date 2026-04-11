@@ -3,13 +3,21 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const connectionRoutes = require('./routes/connections');
+const User = require('./models/User');
+const Connection = require('./models/Connection');
+const Message = require('./models/Message');
+
+const { setupSocketHandlers } = require('./services/socket');
 
 const app = express();
+const server = http.createServer(app);
 
 // Security middleware
 app.use(helmet());
@@ -159,9 +167,25 @@ app.use('*', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 if (!process.env.VERCEL) {
+  const io = new Server(server, {
+    cors: {
+      origin: (origin, callback) => {
+        if (!origin || process.env.NODE_ENV !== 'production' || isAllowedOrigin(origin)) {
+          return callback(null, true);
+        }
+
+        return callback(new Error('Not allowed by CORS'));
+      },
+      credentials: true
+    }
+  });
+
+  app.set('io', io);
+  setupSocketHandlers(io, { User, Connection, Message });
+
   connectToDatabase()
     .then(() => {
-      app.listen(PORT, () => {
+      server.listen(PORT, () => {
         console.log(`SkillSwap server running on port ${PORT}`);
       });
     })

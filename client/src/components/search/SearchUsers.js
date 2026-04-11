@@ -109,10 +109,17 @@ const SearchUsers = () => {
   const isPrioritizedSearch = Boolean(activeQuery.skill) && Boolean(activeQuery.location);
 
   const renderUserCard = (user, { showSuggestedTag = false } = {}) => (
-    <button
+    <div
       key={user._id}
-      type="button"
+      role="button"
+      tabIndex={0}
       onClick={() => navigate(`/user/${user._id}`)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          navigate(`/user/${user._id}`);
+        }
+      }}
       className="card w-full text-left hover:shadow-lg transition-all duration-200 border-gray-200/80"
     >
       <div className="flex items-start justify-between gap-3 mb-4">
@@ -178,7 +185,7 @@ const SearchUsers = () => {
           />
         </div>
       </div>
-    </button>
+    </div>
   );
 
   return (

@@ -9,7 +9,6 @@ import {
   LogOut, 
   Menu, 
   X,
-  Settings,
   Home,
   Bell,
   MessageCircle

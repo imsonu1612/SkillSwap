@@ -72,10 +72,17 @@ const ConnectionsList = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {connections.map((connection) => (
-            <button
+            <div
               key={connection.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => openProfile(connection.user._id)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  openProfile(connection.user._id);
+                }
+              }}
               className="w-full text-left bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-start gap-4">
@@ -131,7 +138,7 @@ const ConnectionsList = () => {
                   View Profile
                 </button>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       )}
