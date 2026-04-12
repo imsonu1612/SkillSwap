@@ -27,15 +27,49 @@ const ChatRoom = () => {
   const { userName } = location.state || {};
 
   const emitMessageSeen = useCallback((messageList) => {
-    const hasUnreadIncoming = messageList.some(
-      (message) => normalizeId(message.sender?._id || message.sender?.id || message.sender) === normalizeId(userId)
-        && message.status !== 'seen'
-    );
+    const unreadIncomingIds = messageList
+      .filter(
+        (message) => normalizeId(message.sender?._id || message.sender?.id || message.sender) === normalizeId(userId)
+          && message.status !== 'seen'
+      )
+      .map((message) => normalizeId(message.id));
 
-    if (hasUnreadIncoming) {
-      socketRef.current?.emit('message_seen', { otherUserId: userId });
+    if (unreadIncomingIds.length > 0) {
+      socketRef.current?.emit('message_seen', {
+        otherUserId: userId,
+        messageIds: unreadIncomingIds
+      });
     }
   }, [userId]);
+
+  const applyStatusUpdate = useCallback((payload, fallbackStatus = null) => {
+    const nextStatus = payload?.status || fallbackStatus;
+    if (!nextStatus) {
+      return;
+    }
+
+    const messageIds = [
+      ...(payload?.messageIds || []),
+      ...(payload?.messageId ? [payload.messageId] : [])
+    ].map(normalizeId);
+
+    if (messageIds.length === 0) {
+      return;
+    }
+
+    setMessages((currentMessages) => currentMessages.map((message) => {
+      if (!messageIds.includes(normalizeId(message.id))) {
+        return message;
+      }
+
+      return {
+        ...message,
+        status: nextStatus,
+        seenAt: payload?.seenAt || message.seenAt,
+        isRead: nextStatus === 'seen' ? true : message.isRead
+      };
+    }));
+  }, []);
 
   const fetchMessages = useCallback(async () => {
     setIsLoading(true);
@@ -113,21 +147,11 @@ const ChatRoom = () => {
     };
 
     const handleMessageStatusUpdate = (payload) => {
-      const messageIds = payload?.messageIds || (payload?.messageId ? [payload.messageId] : []);
-      if (messageIds.length === 0) return;
+      applyStatusUpdate(payload);
+    };
 
-      setMessages((currentMessages) => currentMessages.map((message) => {
-        if (!messageIds.includes(normalizeId(message.id))) {
-          return message;
-        }
-
-        return {
-          ...message,
-          status: payload.status,
-          seenAt: payload.seenAt || message.seenAt,
-          isRead: payload.status === 'seen' ? true : message.isRead
-        };
-      }));
+    const handleMessageDelivered = (payload) => {
+      applyStatusUpdate(payload, 'delivered');
     };
 
     const handleTyping = ({ fromUserId }) => {
@@ -146,38 +170,27 @@ const ChatRoom = () => {
       }
     };
 
-    const handleMessageSeen = ({ fromUserId, messageIds, seenAt }) => {
-      if (normalizeId(fromUserId) !== normalizeId(userId)) {
-        return;
-      }
-
-      setMessages((currentMessages) => currentMessages.map((message) => {
-        if (!messageIds?.includes(normalizeId(message.id))) {
-          return message;
-        }
-
-        return {
-          ...message,
-          status: 'seen',
-          isRead: true,
-          seenAt
-        };
-      }));
+    const handleMessageSeenUpdate = (payload) => {
+      applyStatusUpdate(payload, 'seen');
     };
 
     socket.on('receive_message', handleReceiveMessage);
     socket.on('message_status_update', handleMessageStatusUpdate);
+    socket.on('message_delivered', handleMessageDelivered);
     socket.on('typing', handleTyping);
     socket.on('stop_typing', handleStopTyping);
-    socket.on('message_seen', handleMessageSeen);
+    socket.on('message_seen_update', handleMessageSeenUpdate);
+    socket.on('message_seen', handleMessageSeenUpdate);
     socket.emit('join_chat', { otherUserId: userId });
 
     return () => {
       socket.off('receive_message', handleReceiveMessage);
       socket.off('message_status_update', handleMessageStatusUpdate);
+      socket.off('message_delivered', handleMessageDelivered);
       socket.off('typing', handleTyping);
       socket.off('stop_typing', handleStopTyping);
-      socket.off('message_seen', handleMessageSeen);
+      socket.off('message_seen_update', handleMessageSeenUpdate);
+      socket.off('message_seen', handleMessageSeenUpdate);
       socket.off('online_users_snapshot');
       socket.off('user_online');
       socket.emit('stop_typing', { toUserId: userId });
@@ -185,7 +198,7 @@ const ChatRoom = () => {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [userId]);
+  }, [applyStatusUpdate, userId]);
 
   useEffect(() => {
     fetchMessages();
@@ -298,6 +311,17 @@ const ChatRoom = () => {
     return <Check className="h-4 w-4 text-gray-400" />;
   };
 
+  const getSeenAtLabel = (message) => {
+    if (message.status !== 'seen' || !message.seenAt) {
+      return null;
+    }
+
+    return `Seen at ${new Date(message.seenAt).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`;
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -375,8 +399,13 @@ const ChatRoom = () => {
                   </div>
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   {isMine && (
-                    <div className="mt-1 flex justify-end">
-                      {renderStatus(message.status)}
+                    <div className="mt-1 flex flex-col items-end gap-0.5">
+                      <div className="flex justify-end">
+                        {renderStatus(message.status)}
+                      </div>
+                      {getSeenAtLabel(message) && (
+                        <span className="text-[10px] text-blue-100/90">{getSeenAtLabel(message)}</span>
+                      )}
                     </div>
                   )}
                 </div>

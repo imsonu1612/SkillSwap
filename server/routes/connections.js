@@ -439,8 +439,17 @@ router.post('/message', authenticateToken, [
       message.status = 'delivered';
       await message.save();
       io.to(receiverRoom).emit('receive_message', toPublicMessage(message));
-      io.to(socketRoomForUser(senderId)).emit('message_status_update', {
+      io.to(socketRoomForUser(senderId)).emit('message_delivered', {
+        fromUserId: receiverId,
+        toUserId: senderId,
         messageId: message._id,
+        messageIds: [message._id.toString()]
+      });
+      io.to(socketRoomForUser(senderId)).emit('message_status_update', {
+        fromUserId: receiverId,
+        toUserId: senderId,
+        messageId: message._id,
+        messageIds: [message._id.toString()],
         status: 'delivered'
       });
     }
@@ -491,18 +500,45 @@ router.get('/messages/:userId', authenticateToken, async (req, res) => {
     .populate('sender', 'firstName lastName username avatar');
 
     // Mark incoming messages as delivered when chat is opened.
-    await Message.updateMany(
-      {
-        sender: userId,
-        receiver: currentUserId,
-        status: 'sent'
-      },
-      {
-        $set: {
-          status: 'delivered'
+    const pendingIncomingMessages = await Message.find({
+      sender: userId,
+      receiver: currentUserId,
+      status: 'sent'
+    }).select('_id sender');
+
+    if (pendingIncomingMessages.length > 0) {
+      const pendingIds = pendingIncomingMessages.map((message) => message._id);
+
+      await Message.updateMany(
+        {
+          _id: { $in: pendingIds }
+        },
+        {
+          $set: {
+            status: 'delivered'
+          }
         }
-      }
-    );
+      );
+
+      const io = req.app.get('io');
+      const senderRoom = socketRoomForUser(userId);
+      const deliveredIds = pendingIds.map((id) => id.toString());
+
+      io?.to(senderRoom).emit('message_delivered', {
+        fromUserId: currentUserId,
+        toUserId: userId,
+        messageId: deliveredIds[0],
+        messageIds: deliveredIds
+      });
+
+      io?.to(senderRoom).emit('message_status_update', {
+        fromUserId: currentUserId,
+        toUserId: userId,
+        status: 'delivered',
+        messageId: deliveredIds[0],
+        messageIds: deliveredIds
+      });
+    }
 
     res.json({
       messages: messages.map((msg) => {

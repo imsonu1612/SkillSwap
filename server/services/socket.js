@@ -23,6 +23,64 @@ const toPublicMessage = (messageDocument) => {
 const setupSocketHandlers = (io, { User, Connection, Message }) => {
   const onlineUsers = new Set();
 
+  const notifyDelivered = ({ senderId, receiverId, messageIds = [] }) => {
+    if (!senderId || !receiverId || messageIds.length === 0) {
+      return;
+    }
+
+    const normalizedMessageIds = messageIds.map((id) => id.toString());
+
+    io.to(socketRoomForUser(senderId)).emit('message_delivered', {
+      fromUserId: receiverId,
+      toUserId: senderId,
+      messageIds: normalizedMessageIds,
+      messageId: normalizedMessageIds[0]
+    });
+
+    // Backward compatibility for existing clients.
+    io.to(socketRoomForUser(senderId)).emit('message_status_update', {
+      fromUserId: receiverId,
+      toUserId: senderId,
+      status: 'delivered',
+      messageIds: normalizedMessageIds,
+      messageId: normalizedMessageIds[0]
+    });
+  };
+
+  const notifySeen = ({ senderId, receiverId, messageIds = [], seenAt }) => {
+    if (!senderId || !receiverId || messageIds.length === 0) {
+      return;
+    }
+
+    const normalizedMessageIds = messageIds.map((id) => id.toString());
+
+    io.to(socketRoomForUser(senderId)).emit('message_seen_update', {
+      fromUserId: receiverId,
+      toUserId: senderId,
+      seenAt,
+      messageIds: normalizedMessageIds,
+      messageId: normalizedMessageIds[0]
+    });
+
+    // Backward compatibility for existing clients.
+    io.to(socketRoomForUser(senderId)).emit('message_seen', {
+      fromUserId: receiverId,
+      toUserId: senderId,
+      seenAt,
+      messageIds: normalizedMessageIds,
+      messageId: normalizedMessageIds[0]
+    });
+
+    io.to(socketRoomForUser(senderId)).emit('message_status_update', {
+      fromUserId: receiverId,
+      toUserId: senderId,
+      status: 'seen',
+      seenAt,
+      messageIds: normalizedMessageIds,
+      messageId: normalizedMessageIds[0]
+    });
+  };
+
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace('Bearer ', '');
@@ -52,6 +110,37 @@ const setupSocketHandlers = (io, { User, Connection, Message }) => {
     socket.join(userRoom);
     socket.data.userId = userId;
     onlineUsers.add(userId);
+
+    // Optional enhancement: when user comes online, mark queued sent messages as delivered.
+    Message.find({ receiver: userId, status: 'sent' })
+      .select('_id sender')
+      .then(async (pendingMessages) => {
+        if (!pendingMessages.length) {
+          return;
+        }
+
+        const deliveredAtConnectIds = pendingMessages.map((message) => message._id);
+        await Message.updateMany(
+          { _id: { $in: deliveredAtConnectIds } },
+          { $set: { status: 'delivered' } }
+        );
+
+        const groupedBySender = pendingMessages.reduce((acc, message) => {
+          const senderId = message.sender.toString();
+          if (!acc[senderId]) {
+            acc[senderId] = [];
+          }
+          acc[senderId].push(message._id.toString());
+          return acc;
+        }, {});
+
+        Object.entries(groupedBySender).forEach(([senderId, messageIds]) => {
+          notifyDelivered({ senderId, receiverId: userId, messageIds });
+        });
+      })
+      .catch((error) => {
+        console.error('Socket pending delivery sync error:', error);
+      });
 
     socket.emit('online_users_snapshot', {
       onlineUserIds: Array.from(onlineUsers)
@@ -108,9 +197,10 @@ const setupSocketHandlers = (io, { User, Connection, Message }) => {
           await message.save();
           messagePayload.status = 'delivered';
           io.to(receiverRoom).emit('receive_message', messagePayload);
-          io.to(userRoom).emit('message_status_update', {
-            messageId: message._id,
-            status: 'delivered'
+          notifyDelivered({
+            senderId: userId,
+            receiverId,
+            messageIds: [message._id]
           });
         } else {
           io.to(userRoom).emit('message_status_update', {
@@ -142,15 +232,26 @@ const setupSocketHandlers = (io, { User, Connection, Message }) => {
       });
     });
 
-    socket.on('message_seen', async ({ otherUserId }) => {
+    socket.on('message_seen', async ({ otherUserId, messageId, messageIds }) => {
       try {
         if (!otherUserId) return;
 
-        const updatedMessages = await Message.find({
+        const explicitMessageIds = [
+          ...(Array.isArray(messageIds) ? messageIds : []),
+          ...(messageId ? [messageId] : [])
+        ].map((id) => id.toString());
+
+        const query = {
           sender: otherUserId,
           receiver: userId,
           status: { $ne: 'seen' }
-        });
+        };
+
+        if (explicitMessageIds.length > 0) {
+          query._id = { $in: explicitMessageIds };
+        }
+
+        const updatedMessages = await Message.find(query).select('_id');
 
         if (updatedMessages.length === 0) {
           return;
@@ -158,11 +259,7 @@ const setupSocketHandlers = (io, { User, Connection, Message }) => {
 
         const now = new Date();
         await Message.updateMany(
-          {
-            sender: otherUserId,
-            receiver: userId,
-            status: { $ne: 'seen' }
-          },
+          { _id: { $in: updatedMessages.map((message) => message._id) } },
           {
             $set: {
               status: 'seen',
@@ -172,17 +269,9 @@ const setupSocketHandlers = (io, { User, Connection, Message }) => {
           }
         );
 
-        io.to(socketRoomForUser(otherUserId)).emit('message_seen', {
-          fromUserId: userId,
-          toUserId: otherUserId,
-          seenAt: now,
-          messageIds: updatedMessages.map((message) => message._id.toString())
-        });
-
-        io.to(socketRoomForUser(otherUserId)).emit('message_status_update', {
-          fromUserId: userId,
-          toUserId: otherUserId,
-          status: 'seen',
+        notifySeen({
+          senderId: otherUserId,
+          receiverId: userId,
           seenAt: now,
           messageIds: updatedMessages.map((message) => message._id.toString())
         });
