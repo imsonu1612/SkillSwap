@@ -71,7 +71,7 @@ const OTPVerification = () => {
     try {
       await verifyOTP(userId, otpString);
       toast.success('Email verified successfully!');
-      navigate('/dashboard');
+      navigate('/', { replace: true });
     } catch (error) {
       toast.error(error.response?.data?.message || 'Verification failed');
     } finally {

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import toast from 'react-hot-toast';
 import { 
   Users, 
   Search, 
@@ -30,12 +31,29 @@ const Navbar = () => {
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
     await logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleUserMenu = () => setIsUserMenuOpen(!isUserMenuOpen);
-  const isActiveRoute = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
+  const handleProtectedNavigation = (path) => {
+    setIsMenuOpen(false);
+    if (!user) {
+      toast.error('Please login to continue');
+      navigate('/login', { state: { from: path, message: 'Please login to continue' } });
+      return;
+    }
+
+    navigate(path);
+  };
+
+  const isActiveRoute = (path) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
   const navClassName = (path) => `px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out flex items-center space-x-1 relative cursor-pointer hover:bg-primary-50/80 dark:hover:bg-gray-800 hover:-translate-y-0.5 hover:shadow-sm ${isActiveRoute(path) ? 'text-primary-700 bg-primary-50 dark:bg-gray-800 dark:text-primary-300 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300'}`;
   const navUnderlineClass = (path) => `pointer-events-none absolute left-2 right-2 -bottom-0.5 h-0.5 rounded-full bg-primary-600 transition-transform duration-300 ease-in-out origin-center ${isActiveRoute(path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`;
   const mobileNavClassName = (path) => `flex items-center space-x-2 block px-3 py-2 rounded-md text-base font-medium relative transition-all duration-300 ease-in-out cursor-pointer ${isActiveRoute(path) ? 'text-primary-700 bg-primary-50 dark:bg-gray-800 dark:text-primary-300 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-primary-50/70 dark:hover:bg-gray-800'}`;
@@ -76,7 +94,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           {/* Logo and Brand */}
           <div className="flex items-center">
-            <Link to="/home" className="group flex items-center space-x-2 transition-all duration-300 ease-in-out hover:opacity-95">
+            <Link to="/" className="group flex items-center space-x-2 transition-all duration-300 ease-in-out hover:opacity-95">
               <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center transition-transform duration-300 ease-in-out group-hover:scale-105 group-hover:shadow-md">
                 <Users className="h-5 w-5 text-white" />
               </div>
@@ -86,34 +104,22 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link
-              to="/home"
-              className={`group ${navClassName('/home')}`}
-            >
+            <Link to="/" className={`group ${navClassName('/')}`}>
               <Home className="h-4 w-4" />
               <span>Home</span>
-              <span aria-hidden="true" className={navUnderlineClass('/home')} />
+              <span aria-hidden="true" className={navUnderlineClass('/')} />
             </Link>
-            <Link
-              to="/dashboard"
-              className={`group ${navClassName('/dashboard')}`}
-            >
+            <button type="button" onClick={() => handleProtectedNavigation('/dashboard')} className={`group ${navClassName('/dashboard')}`}>
               <Users className="h-4 w-4" />
               <span>Dashboard</span>
               <span aria-hidden="true" className={navUnderlineClass('/dashboard')} />
-            </Link>
-            <Link
-              to="/search"
-              className={`group ${navClassName('/search')}`}
-            >
+            </button>
+            <button type="button" onClick={() => handleProtectedNavigation('/find-people')} className={`group ${navClassName('/find-people')}`}>
               <Search className="h-4 w-4" />
               <span>Find People</span>
-              <span aria-hidden="true" className={navUnderlineClass('/search')} />
-            </Link>
-            <Link
-              to="/connections"
-              className={`group ${navClassName('/connections')}`}
-            >
+              <span aria-hidden="true" className={navUnderlineClass('/find-people')} />
+            </button>
+            <button type="button" onClick={() => handleProtectedNavigation('/connections')} className={`group ${navClassName('/connections')}`}>
               <MessageCircle className="h-4 w-4" />
               <span>Connections</span>
               <span aria-hidden="true" className={navUnderlineClass('/connections')} />
@@ -122,11 +128,8 @@ const Navbar = () => {
                   {unreadMessages}
                 </span>
               )}
-            </Link>
-            <Link
-              to="/notifications"
-              className={`group ${navClassName('/notifications')}`}
-            >
+            </button>
+            <button type="button" onClick={() => handleProtectedNavigation('/notifications')} className={`group ${navClassName('/notifications')}`}>
               <Bell className="h-4 w-4" />
               <span>Requests</span>
               <span aria-hidden="true" className={navUnderlineClass('/notifications')} />
@@ -135,7 +138,7 @@ const Navbar = () => {
                   {unreadRequests}
                 </span>
               )}
-            </Link>
+            </button>
           </div>
 
           {/* User Menu */}
@@ -150,40 +153,56 @@ const Navbar = () => {
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            <div ref={userMenuRef} className="relative">
-              <button
-                onClick={toggleUserMenu}
-                className="flex items-center space-x-2 text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out cursor-pointer hover:scale-105 hover:shadow-sm"
-                aria-expanded={isUserMenuOpen}
-                aria-haspopup="true"
-              >
-                <div className="h-8 w-8 bg-primary-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-primary-600" />
-                </div>
-                <span>{user?.firstName || user?.username}</span>
-              </button>
-
-              {/* User Dropdown */}
-              <div
-                className={`absolute right-0 mt-2 w-48 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 py-1.5 z-50 shadow-xl ring-1 ring-black/5 dark:ring-white/5 transition-all duration-200 origin-top-right ${isUserMenuOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-1 pointer-events-none'}`}
-              >
-                <Link
-                  to="/profile"
-                  className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-primary-50 dark:hover:bg-gray-800 hover:text-primary-700 dark:hover:text-primary-300 transition-all duration-300 ease-in-out cursor-pointer"
-                  onClick={() => setIsUserMenuOpen(false)}
-                >
-                  <User className="h-4 w-4" />
-                  <span>Profile</span>
-                </Link>
+            {user ? (
+              <div ref={userMenuRef} className="relative">
                 <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 text-left transition-all duration-300 ease-in-out cursor-pointer"
+                  onClick={toggleUserMenu}
+                  className="flex items-center space-x-2 text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out cursor-pointer hover:scale-105 hover:shadow-sm"
+                  aria-expanded={isUserMenuOpen}
+                  aria-haspopup="true"
                 >
-                  <LogOut className="h-4 w-4" />
-                  <span>Sign out</span>
+                  <div className="h-8 w-8 bg-primary-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary-600" />
+                  </div>
+                  <span>{user?.firstName || user?.username}</span>
                 </button>
+
+                <div
+                  className={`absolute right-0 mt-2 w-48 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 py-1.5 z-50 shadow-xl ring-1 ring-black/5 dark:ring-white/5 transition-all duration-200 origin-top-right ${isUserMenuOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-1 pointer-events-none'}`}
+                >
+                  <Link
+                    to="/profile"
+                    className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-primary-50 dark:hover:bg-gray-800 hover:text-primary-700 dark:hover:text-primary-300 transition-all duration-300 ease-in-out cursor-pointer"
+                    onClick={() => setIsUserMenuOpen(false)}
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 text-left transition-all duration-300 ease-in-out cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-300 hover:bg-primary-50 dark:hover:bg-gray-800 hover:text-primary-700 dark:hover:text-primary-300"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-primary-700"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -216,34 +235,22 @@ const Navbar = () => {
             </button>
 
             <Link
-              to="/home"
-              className={mobileNavClassName('/home')}
+              to="/"
+              className={mobileNavClassName('/')}
               onClick={() => setIsMenuOpen(false)}
             >
               <Home className="h-4 w-4" />
               <span>Home</span>
             </Link>
-            <Link
-              to="/dashboard"
-              className={mobileNavClassName('/dashboard')}
-              onClick={() => setIsMenuOpen(false)}
-            >
+            <button type="button" onClick={() => handleProtectedNavigation('/dashboard')} className={mobileNavClassName('/dashboard')}>
               <Users className="h-4 w-4" />
               <span>Dashboard</span>
-            </Link>
-            <Link
-              to="/search"
-              className={mobileNavClassName('/search')}
-              onClick={() => setIsMenuOpen(false)}
-            >
+            </button>
+            <button type="button" onClick={() => handleProtectedNavigation('/find-people')} className={mobileNavClassName('/find-people')}>
               <Search className="h-4 w-4" />
               <span>Find People</span>
-            </Link>
-            <Link
-              to="/connections"
-              className={mobileNavClassName('/connections')}
-              onClick={() => setIsMenuOpen(false)}
-            >
+            </button>
+            <button type="button" onClick={() => handleProtectedNavigation('/connections')} className={mobileNavClassName('/connections')}>
               <MessageCircle className="h-4 w-4" />
               <span>Connections</span>
               {unreadMessages > 0 && (
@@ -251,12 +258,8 @@ const Navbar = () => {
                   {unreadMessages}
                 </span>
               )}
-            </Link>
-            <Link
-              to="/notifications"
-              className={mobileNavClassName('/notifications')}
-              onClick={() => setIsMenuOpen(false)}
-            >
+            </button>
+            <button type="button" onClick={() => handleProtectedNavigation('/notifications')} className={mobileNavClassName('/notifications')}>
               <Bell className="h-4 w-4" />
               <span>Requests</span>
               {unreadRequests > 0 && (
@@ -264,25 +267,46 @@ const Navbar = () => {
                   {unreadRequests}
                 </span>
               )}
-            </Link>
-            <Link
-              to="/profile"
-              className="flex items-center space-x-2 text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-primary-50/70 dark:hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium transition-all duration-300 ease-in-out cursor-pointer"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <User className="h-4 w-4" />
-              <span>Profile</span>
-            </Link>
-            <button
-              onClick={() => {
-                setIsMenuOpen(false);
-                handleLogout();
-              }}
-              className="flex items-center space-x-2 w-full text-left text-gray-700 dark:text-gray-200 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 px-3 py-2 rounded-md text-base font-medium transition-all duration-300 ease-in-out cursor-pointer"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>Sign out</span>
             </button>
+            {user ? (
+              <>
+                <Link
+                  to="/profile"
+                  className="flex items-center space-x-2 text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-primary-50/70 dark:hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium transition-all duration-300 ease-in-out cursor-pointer"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <User className="h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex items-center space-x-2 w-full text-left text-gray-700 dark:text-gray-200 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 px-3 py-2 rounded-md text-base font-medium transition-all duration-300 ease-in-out cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-primary-50/70 dark:hover:bg-gray-800"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="block px-3 py-2 rounded-md text-base font-semibold text-white bg-primary-600 hover:bg-primary-700"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -18,9 +18,10 @@ import ChatRoom from './components/chat/ChatRoom';
 import Navbar from './components/layout/Navbar';
 import './index.css';
 
-// Protected Route Component
-const ProtectedRoute = ({ children }) => {
+// Private Route Component
+const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   
   if (loading) {
     return (
@@ -30,7 +31,9 @@ const ProtectedRoute = ({ children }) => {
     );
   }
   
-  return user ? children : <Navigate to="/login" replace />;
+  return user
+    ? children
+    : <Navigate to="/login" replace state={{ from: location.pathname, message: 'Please login to continue' }} />;
 };
 
 // Public Route Component (redirect if already logged in)
@@ -45,7 +48,107 @@ const PublicRoute = ({ children }) => {
     );
   }
   
-  return user ? <Navigate to="/home" replace /> : children;
+  return user ? <Navigate to="/" replace /> : children;
+};
+
+const RouterShell = ({ isDark }) => {
+  const location = useLocation();
+  const hideNavbarOnAuthPages = ['/login', '/register', '/verify-otp'].includes(location.pathname);
+
+  return (
+    <div className="min-h-screen bg-gray-50 transition-all duration-300 dark:bg-gray-950 dark:text-gray-100">
+      {!hideNavbarOnAuthPages && <Navbar />}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: isDark ? '#111827' : '#363636',
+            color: '#fff',
+            border: isDark ? '1px solid #374151' : 'none'
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        } />
+        <Route path="/register" element={
+          <PublicRoute>
+            <Register />
+          </PublicRoute>
+        } />
+        <Route path="/verify-otp" element={
+          <PublicRoute>
+            <OTPVerification />
+          </PublicRoute>
+        } />
+
+        {/* Private Routes */}
+        <Route path="/dashboard" element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        } />
+        <Route path="/profile" element={
+          <PrivateRoute>
+            <Profile />
+          </PrivateRoute>
+        } />
+        <Route path="/find-people" element={
+          <PrivateRoute>
+            <SearchUsers />
+          </PrivateRoute>
+        } />
+        <Route path="/search" element={
+          <Navigate to="/find-people" replace />
+        } />
+        <Route path="/user/:userId" element={
+          <PrivateRoute>
+            <UserProfileView />
+          </PrivateRoute>
+        } />
+        <Route path="/notifications" element={
+          <PrivateRoute>
+            <Notifications />
+          </PrivateRoute>
+        } />
+        <Route path="/connections" element={
+          <PrivateRoute>
+            <ConnectionsList />
+          </PrivateRoute>
+        } />
+        <Route path="/chat/:userId" element={
+          <PrivateRoute>
+            <ChatRoom />
+          </PrivateRoute>
+        } />
+
+        {/* Default redirect */}
+        <Route path="/home" element={<Navigate to="/" replace />} />
+        <Route path="/" element={<Home />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
+  );
 };
 
 const AppContent = () => {
@@ -55,119 +158,7 @@ const AppContent = () => {
     <AuthProvider>
       <NotificationProvider>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <div className="min-h-screen bg-gray-50 transition-all duration-300 dark:bg-gray-950 dark:text-gray-100">
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: isDark ? '#111827' : '#363636',
-                  color: '#fff',
-                  border: isDark ? '1px solid #374151' : 'none'
-                },
-                success: {
-                  duration: 3000,
-                  iconTheme: {
-                    primary: '#10b981',
-                    secondary: '#fff',
-                  },
-                },
-                error: {
-                  duration: 4000,
-                  iconTheme: {
-                    primary: '#ef4444',
-                    secondary: '#fff',
-                  },
-                },
-              }}
-            />
-
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              } />
-              <Route path="/register" element={
-                <PublicRoute>
-                  <Register />
-                </PublicRoute>
-              } />
-              <Route path="/verify-otp" element={
-                <PublicRoute>
-                  <OTPVerification />
-                </PublicRoute>
-              } />
-
-              {/* Protected Routes */}
-              <Route path="/home" element={
-                <ProtectedRoute>
-                  <div>
-                    <Navbar />
-                    <Home />
-                  </div>
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <div>
-                    <Navbar />
-                    <Dashboard />
-                  </div>
-                </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <div>
-                    <Navbar />
-                    <Profile />
-                  </div>
-                </ProtectedRoute>
-              } />
-              <Route path="/search" element={
-                <ProtectedRoute>
-                  <div>
-                    <Navbar />
-                    <SearchUsers />
-                  </div>
-                </ProtectedRoute>
-              } />
-              <Route path="/user/:userId" element={
-                <ProtectedRoute>
-                  <div>
-                    <Navbar />
-                    <UserProfileView />
-                  </div>
-                </ProtectedRoute>
-              } />
-              <Route path="/notifications" element={
-                <ProtectedRoute>
-                  <div>
-                    <Navbar />
-                    <Notifications />
-                  </div>
-                </ProtectedRoute>
-              } />
-              <Route path="/connections" element={
-                <ProtectedRoute>
-                  <div>
-                    <Navbar />
-                    <ConnectionsList />
-                  </div>
-                </ProtectedRoute>
-              } />
-              <Route path="/chat/:userId" element={
-                <ProtectedRoute>
-                  <ChatRoom />
-                </ProtectedRoute>
-              } />
-
-              {/* Default redirect */}
-              <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="*" element={<Navigate to="/home" replace />} />
-            </Routes>
-          </div>
+          <RouterShell isDark={isDark} />
         </Router>
       </NotificationProvider>
     </AuthProvider>
