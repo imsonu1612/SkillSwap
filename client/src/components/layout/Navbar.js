@@ -28,6 +28,19 @@ const Navbar = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
 
+  const navGradients = {
+    '/': { from: '#a955ff', to: '#ea51ff' },
+    '/dashboard': { from: '#56CCF2', to: '#2F80ED' },
+    '/find-people': { from: '#FF9966', to: '#FF5E62' },
+    '/connections': { from: '#80FF72', to: '#2dd4bf' },
+    '/notifications': { from: '#ffa9c6', to: '#f434e2' },
+  };
+
+  const navGradientStyle = (path) => ({
+    '--gradient-from': navGradients[path]?.from || '#3b82f6',
+    '--gradient-to': navGradients[path]?.to || '#1d4ed8',
+  });
+
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
     await logout();
@@ -54,9 +67,14 @@ const Navbar = () => {
 
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
-  const navClassName = (path) => `px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out flex items-center space-x-1 relative cursor-pointer hover:bg-primary-50/80 dark:hover:bg-gray-800 hover:-translate-y-0.5 hover:shadow-sm ${isActiveRoute(path) ? 'text-primary-700 bg-primary-50 dark:bg-gray-800 dark:text-primary-300 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300'}`;
-  const navUnderlineClass = (path) => `pointer-events-none absolute left-2 right-2 -bottom-0.5 h-0.5 rounded-full bg-primary-600 transition-transform duration-300 ease-in-out origin-center ${isActiveRoute(path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`;
-  const mobileNavClassName = (path) => `flex items-center space-x-2 block px-3 py-2 rounded-md text-base font-medium relative transition-all duration-300 ease-in-out cursor-pointer ${isActiveRoute(path) ? 'text-primary-700 bg-primary-50 dark:bg-gray-800 dark:text-primary-300 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-primary-50/70 dark:hover:bg-gray-800'}`;
+  const navClassName = (path) => `group px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out flex items-center relative cursor-pointer overflow-hidden hover:-translate-y-0.5 ${isActiveRoute(path) ? 'text-white shadow-none' : 'text-gray-700 dark:text-gray-200 hover:text-white'}`;
+  const navGradientClass = (path) => `pointer-events-none absolute inset-0 rounded-md bg-[linear-gradient(45deg,var(--gradient-from),var(--gradient-to))] transition-opacity duration-500 ${isActiveRoute(path) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
+  const navGlowClass = (path) => `pointer-events-none absolute inset-x-0 top-1 -z-10 h-full rounded-md bg-[linear-gradient(45deg,var(--gradient-from),var(--gradient-to))] blur-[12px] transition-opacity duration-500 ${isActiveRoute(path) ? 'opacity-40' : 'opacity-0 group-hover:opacity-35'}`;
+  const navUnderlineClass = (path) => `pointer-events-none absolute left-2 right-2 -bottom-0.5 h-0.5 rounded-full bg-white transition-transform duration-300 ease-in-out origin-center ${isActiveRoute(path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`;
+  const mobileNavClassName = (path) => `group flex items-center space-x-2 block px-3 py-2 rounded-md text-base font-medium relative transition-all duration-300 ease-in-out cursor-pointer overflow-hidden ${isActiveRoute(path) ? 'text-white' : 'text-gray-700 dark:text-gray-200 hover:text-white'}`;
+  const utilityButtonClass = 'group relative overflow-hidden rounded-md transition-all duration-300';
+  const utilityOverlayClass = 'pointer-events-none absolute inset-0 rounded-md bg-[linear-gradient(45deg,var(--gradient-from),var(--gradient-to))] opacity-0 transition-opacity duration-500 group-hover:opacity-100';
+  const utilityGlowClass = 'pointer-events-none absolute inset-x-0 top-1 -z-10 h-full rounded-md bg-[linear-gradient(45deg,var(--gradient-from),var(--gradient-to))] opacity-0 blur-[10px] transition-opacity duration-500 group-hover:opacity-35';
 
   useEffect(() => {
     const handlePointerDownOutside = (event) => {
@@ -104,37 +122,57 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className={`group ${navClassName('/')}`}>
-              <Home className="h-4 w-4" />
-              <span>Home</span>
+            <Link to="/" style={navGradientStyle('/')} className={navClassName('/')}>
+              <span aria-hidden="true" className={navGlowClass('/')} />
+              <span aria-hidden="true" className={navGradientClass('/')} />
+              <span className="relative z-10 flex items-center space-x-1">
+                <Home className="h-4 w-4" />
+                <span>Home</span>
+              </span>
               <span aria-hidden="true" className={navUnderlineClass('/')} />
             </Link>
-            <button type="button" onClick={() => handleProtectedNavigation('/dashboard')} className={`group ${navClassName('/dashboard')}`}>
-              <Users className="h-4 w-4" />
-              <span>Dashboard</span>
+            <button type="button" style={navGradientStyle('/dashboard')} onClick={() => handleProtectedNavigation('/dashboard')} className={navClassName('/dashboard')}>
+              <span aria-hidden="true" className={navGlowClass('/dashboard')} />
+              <span aria-hidden="true" className={navGradientClass('/dashboard')} />
+              <span className="relative z-10 flex items-center space-x-1">
+                <Users className="h-4 w-4" />
+                <span>Dashboard</span>
+              </span>
               <span aria-hidden="true" className={navUnderlineClass('/dashboard')} />
             </button>
-            <button type="button" onClick={() => handleProtectedNavigation('/find-people')} className={`group ${navClassName('/find-people')}`}>
-              <Search className="h-4 w-4" />
-              <span>Find People</span>
+            <button type="button" style={navGradientStyle('/find-people')} onClick={() => handleProtectedNavigation('/find-people')} className={navClassName('/find-people')}>
+              <span aria-hidden="true" className={navGlowClass('/find-people')} />
+              <span aria-hidden="true" className={navGradientClass('/find-people')} />
+              <span className="relative z-10 flex items-center space-x-1">
+                <Search className="h-4 w-4" />
+                <span>Find People</span>
+              </span>
               <span aria-hidden="true" className={navUnderlineClass('/find-people')} />
             </button>
-            <button type="button" onClick={() => handleProtectedNavigation('/connections')} className={`group ${navClassName('/connections')}`}>
-              <MessageCircle className="h-4 w-4" />
-              <span>Connections</span>
+            <button type="button" style={navGradientStyle('/connections')} onClick={() => handleProtectedNavigation('/connections')} className={navClassName('/connections')}>
+              <span aria-hidden="true" className={navGlowClass('/connections')} />
+              <span aria-hidden="true" className={navGradientClass('/connections')} />
+              <span className="relative z-10 flex items-center space-x-1">
+                <MessageCircle className="h-4 w-4" />
+                <span>Connections</span>
+              </span>
               <span aria-hidden="true" className={navUnderlineClass('/connections')} />
               {unreadMessages > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                <span className="absolute z-20 -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                   {unreadMessages}
                 </span>
               )}
             </button>
-            <button type="button" onClick={() => handleProtectedNavigation('/notifications')} className={`group ${navClassName('/notifications')}`}>
-              <Bell className="h-4 w-4" />
-              <span>Requests</span>
+            <button type="button" style={navGradientStyle('/notifications')} onClick={() => handleProtectedNavigation('/notifications')} className={navClassName('/notifications')}>
+              <span aria-hidden="true" className={navGlowClass('/notifications')} />
+              <span aria-hidden="true" className={navGradientClass('/notifications')} />
+              <span className="relative z-10 flex items-center space-x-1">
+                <Bell className="h-4 w-4" />
+                <span>Requests</span>
+              </span>
               <span aria-hidden="true" className={navUnderlineClass('/notifications')} />
               {unreadRequests > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                <span className="absolute z-20 -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                   {unreadRequests}
                 </span>
               )}
@@ -146,11 +184,16 @@ const Navbar = () => {
             <button
               type="button"
               onClick={toggleTheme}
-              className="h-10 w-10 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-gray-700 transition-all duration-300 ease-in-out cursor-pointer hover:scale-105 hover:shadow-sm flex items-center justify-center"
+              style={{ '--gradient-from': '#60a5fa', '--gradient-to': '#a855f7' }}
+              className="group relative flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-white text-gray-700 transition-all duration-300 ease-in-out hover:scale-105 hover:text-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
               aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(45deg,var(--gradient-from),var(--gradient-to))] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+              <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-1 -z-10 h-full rounded-full bg-[linear-gradient(45deg,var(--gradient-from),var(--gradient-to))] opacity-0 blur-[10px] transition-opacity duration-500 group-hover:opacity-40" />
+              <span className="relative z-10">
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </span>
             </button>
 
             {user ? (
@@ -191,15 +234,21 @@ const Navbar = () => {
               <div className="flex items-center gap-2">
                 <Link
                   to="/login"
-                  className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-300 hover:bg-primary-50 dark:hover:bg-gray-800 hover:text-primary-700 dark:hover:text-primary-300"
+                  style={{ '--gradient-from': '#56CCF2', '--gradient-to': '#2F80ED' }}
+                  className={`${utilityButtonClass} px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-white`}
                 >
-                  Login
+                  <span aria-hidden="true" className={utilityGlowClass} />
+                  <span aria-hidden="true" className={utilityOverlayClass} />
+                  <span className="relative z-10">Login</span>
                 </Link>
                 <Link
                   to="/register"
-                  className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-primary-700"
+                  style={{ '--gradient-from': '#a955ff', '--gradient-to': '#ea51ff' }}
+                  className={`${utilityButtonClass} px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:text-white`}
                 >
-                  Sign Up
+                  <span aria-hidden="true" className={utilityGlowClass} />
+                  <span aria-hidden="true" className={utilityOverlayClass} />
+                  <span className="relative z-10">Sign Up</span>
                 </Link>
               </div>
             )}
@@ -228,42 +277,62 @@ const Navbar = () => {
             <button
               type="button"
               onClick={toggleTheme}
-              className="w-full flex items-center space-x-2 text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-primary-50/70 dark:hover:bg-gray-800 px-3 py-2 rounded-md text-base font-medium transition-all duration-300 ease-in-out cursor-pointer"
+              style={{ '--gradient-from': '#60a5fa', '--gradient-to': '#a855f7' }}
+              className="group relative w-full overflow-hidden rounded-md px-3 py-2 text-base font-medium text-gray-700 transition-all duration-300 ease-in-out cursor-pointer hover:text-white dark:text-gray-200"
             >
-              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+              <span aria-hidden="true" className={utilityOverlayClass} />
+              <span className="relative z-10 flex items-center space-x-2">
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+              </span>
             </button>
 
             <Link
               to="/"
+              style={navGradientStyle('/')}
               className={mobileNavClassName('/')}
               onClick={() => setIsMenuOpen(false)}
             >
-              <Home className="h-4 w-4" />
-              <span>Home</span>
+              <span aria-hidden="true" className={navGradientClass('/')} />
+              <span className="relative z-10 flex items-center space-x-2">
+                <Home className="h-4 w-4" />
+                <span>Home</span>
+              </span>
             </Link>
-            <button type="button" onClick={() => handleProtectedNavigation('/dashboard')} className={mobileNavClassName('/dashboard')}>
-              <Users className="h-4 w-4" />
-              <span>Dashboard</span>
+            <button type="button" style={navGradientStyle('/dashboard')} onClick={() => handleProtectedNavigation('/dashboard')} className={mobileNavClassName('/dashboard')}>
+              <span aria-hidden="true" className={navGradientClass('/dashboard')} />
+              <span className="relative z-10 flex items-center space-x-2">
+                <Users className="h-4 w-4" />
+                <span>Dashboard</span>
+              </span>
             </button>
-            <button type="button" onClick={() => handleProtectedNavigation('/find-people')} className={mobileNavClassName('/find-people')}>
-              <Search className="h-4 w-4" />
-              <span>Find People</span>
+            <button type="button" style={navGradientStyle('/find-people')} onClick={() => handleProtectedNavigation('/find-people')} className={mobileNavClassName('/find-people')}>
+              <span aria-hidden="true" className={navGradientClass('/find-people')} />
+              <span className="relative z-10 flex items-center space-x-2">
+                <Search className="h-4 w-4" />
+                <span>Find People</span>
+              </span>
             </button>
-            <button type="button" onClick={() => handleProtectedNavigation('/connections')} className={mobileNavClassName('/connections')}>
-              <MessageCircle className="h-4 w-4" />
-              <span>Connections</span>
+            <button type="button" style={navGradientStyle('/connections')} onClick={() => handleProtectedNavigation('/connections')} className={mobileNavClassName('/connections')}>
+              <span aria-hidden="true" className={navGradientClass('/connections')} />
+              <span className="relative z-10 flex items-center space-x-2">
+                <MessageCircle className="h-4 w-4" />
+                <span>Connections</span>
+              </span>
               {unreadMessages > 0 && (
-                <span className="absolute top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                <span className="absolute z-20 top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                   {unreadMessages}
                 </span>
               )}
             </button>
-            <button type="button" onClick={() => handleProtectedNavigation('/notifications')} className={mobileNavClassName('/notifications')}>
-              <Bell className="h-4 w-4" />
-              <span>Requests</span>
+            <button type="button" style={navGradientStyle('/notifications')} onClick={() => handleProtectedNavigation('/notifications')} className={mobileNavClassName('/notifications')}>
+              <span aria-hidden="true" className={navGradientClass('/notifications')} />
+              <span className="relative z-10 flex items-center space-x-2">
+                <Bell className="h-4 w-4" />
+                <span>Requests</span>
+              </span>
               {unreadRequests > 0 && (
-                <span className="absolute top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                <span className="absolute z-20 top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                   {unreadRequests}
                 </span>
               )}
@@ -293,17 +362,21 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-primary-50/70 dark:hover:bg-gray-800"
+                  style={{ '--gradient-from': '#56CCF2', '--gradient-to': '#2F80ED' }}
+                  className="group relative block overflow-hidden rounded-md px-3 py-2 text-base font-medium text-gray-700 transition-all duration-300 hover:text-white dark:text-gray-200"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Login
+                  <span aria-hidden="true" className={utilityOverlayClass} />
+                  <span className="relative z-10">Login</span>
                 </Link>
                 <Link
                   to="/register"
-                  className="block px-3 py-2 rounded-md text-base font-semibold text-white bg-primary-600 hover:bg-primary-700"
+                  style={{ '--gradient-from': '#a955ff', '--gradient-to': '#ea51ff' }}
+                  className="group relative block overflow-hidden rounded-md px-3 py-2 text-base font-semibold text-gray-700 transition-all duration-300 hover:text-white dark:text-gray-200"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Sign Up
+                  <span aria-hidden="true" className={utilityOverlayClass} />
+                  <span className="relative z-10">Sign Up</span>
                 </Link>
               </>
             )}
