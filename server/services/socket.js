@@ -6,17 +6,37 @@ const socketRoomForChat = (userIdA, userIdB) => {
   return `chat_${first}_${second}`;
 };
 
-const toPublicMessage = (messageDocument) => {
+const toPublicMessage = (messageDocument, viewerId = null) => {
   const plain = messageDocument.toObject ? messageDocument.toObject() : messageDocument;
+  const deletedFor = Array.isArray(plain.deletedFor)
+    ? plain.deletedFor.map((value) => value?.toString?.() || String(value))
+    : [];
+  const viewerIdString = viewerId ? String(viewerId) : null;
+  const shouldHideContent = Boolean(
+    plain.deletedForEveryone || (viewerIdString && deletedFor.includes(viewerIdString))
+  );
+
   return {
     id: plain._id || plain.id,
     sender: plain.sender?.getPublicProfile ? plain.sender.getPublicProfile() : plain.sender,
     receiver: plain.receiver,
-    content: plain.content,
+    content: shouldHideContent ? null : plain.content,
     status: plain.status,
     seenAt: plain.seenAt,
     isRead: plain.isRead,
-    createdAt: plain.createdAt
+    createdAt: plain.createdAt,
+    replyTo: plain.replyTo
+      ? {
+          id: plain.replyTo._id || plain.replyTo.id,
+          content: plain.replyTo.content,
+          sender: plain.replyTo.sender?.getPublicProfile ? plain.replyTo.sender.getPublicProfile() : plain.replyTo.sender,
+          createdAt: plain.replyTo.createdAt
+        }
+      : null,
+    isDeleted: Boolean(plain.isDeleted || shouldHideContent),
+    deletedFor,
+    deletedForEveryone: Boolean(plain.deletedForEveryone),
+    deletedAt: plain.deletedAt
   };
 };
 
@@ -180,12 +200,20 @@ const setupSocketHandlers = (io, { User, Connection, Message }) => {
           sender: userId,
           receiver: receiverId,
           content,
+          replyTo: payload?.replyToMessageId || null,
           status: 'sent',
           isRead: false,
           seenAt: null
         });
 
         await message.populate('sender', 'firstName lastName username avatar');
+        await message.populate({
+          path: 'replyTo',
+          populate: {
+            path: 'sender',
+            select: 'firstName lastName username avatar'
+          }
+        });
 
         const messagePayload = toPublicMessage(message);
         const receiverRoom = socketRoomForUser(receiverId);

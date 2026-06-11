@@ -197,10 +197,12 @@ const ConnectionsList = () => {
                       <User className="h-6 w-6 text-primary-600" />
                     </div>
                   )}
-                  <span
-                    className={`absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-white ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}
-                    title={isOnline ? 'Online' : 'Offline'}
-                  />
+                  {isOnline && (
+                    <span
+                      className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-500"
+                      title="Online"
+                    />
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0">

@@ -10,6 +10,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const connectionRoutes = require('./routes/connections');
+const messageRoutes = require('./routes/messages');
 const User = require('./models/User');
 const Connection = require('./models/Connection');
 const Message = require('./models/Message');
@@ -140,6 +141,7 @@ app.use('/api', async (req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/connections', connectionRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

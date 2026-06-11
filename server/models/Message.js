@@ -16,6 +16,11 @@ const messageSchema = new mongoose.Schema({
     required: true,
     maxlength: [1000, 'Message cannot exceed 1000 characters']
   },
+  replyTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Message',
+    default: null
+  },
   status: {
     type: String,
     enum: ['sent', 'delivered', 'seen'],
@@ -28,6 +33,22 @@ const messageSchema = new mongoose.Schema({
   isRead: {
     type: Boolean,
     default: false
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  deletedFor: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  deletedForEveryone: {
+    type: Boolean,
+    default: false
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

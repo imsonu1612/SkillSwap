@@ -399,7 +399,7 @@ router.post('/message', authenticateToken, [
       });
     }
 
-    const { receiverId, content } = req.body;
+    const { receiverId, content, replyToMessageId } = req.body;
     const senderId = req.userId;
 
     // Check if users are connected
@@ -422,6 +422,7 @@ router.post('/message', authenticateToken, [
       sender: senderId,
       receiver: receiverId,
       content,
+      replyTo: replyToMessageId || null,
       status: 'sent'
     });
 
@@ -429,6 +430,13 @@ router.post('/message', authenticateToken, [
 
     // Populate sender info
     await message.populate('sender', 'firstName lastName username avatar');
+    await message.populate({
+      path: 'replyTo',
+      populate: {
+        path: 'sender',
+        select: 'firstName lastName username avatar'
+      }
+    });
 
     const io = req.app.get('io');
     const receiverRoom = socketRoomForUser(receiverId);
@@ -438,7 +446,7 @@ router.post('/message', authenticateToken, [
     if (isReceiverOnline) {
       message.status = 'delivered';
       await message.save();
-      io.to(receiverRoom).emit('receive_message', toPublicMessage(message));
+      io.to(receiverRoom).emit('receive_message', toPublicMessage(message, receiverId));
       io.to(socketRoomForUser(senderId)).emit('message_delivered', {
         fromUserId: receiverId,
         toUserId: senderId,
@@ -456,7 +464,7 @@ router.post('/message', authenticateToken, [
 
     res.status(201).json({
       message: 'Message sent successfully',
-      data: toPublicMessage(message)
+      data: toPublicMessage(message, senderId)
     });
 
   } catch (error) {
@@ -497,7 +505,14 @@ router.get('/messages/:userId', authenticateToken, async (req, res) => {
       ]
     })
     .sort({ createdAt: 1 })
-    .populate('sender', 'firstName lastName username avatar');
+    .populate('sender', 'firstName lastName username avatar')
+    .populate({
+      path: 'replyTo',
+      populate: {
+        path: 'sender',
+        select: 'firstName lastName username avatar'
+      }
+    });
 
     // Mark incoming messages as delivered when chat is opened.
     const pendingIncomingMessages = await Message.find({
@@ -548,16 +563,7 @@ router.get('/messages/:userId', authenticateToken, async (req, res) => {
           plain.status = 'delivered';
         }
 
-        return {
-          id: plain._id,
-          sender: msg.sender.getPublicProfile(),
-          receiver: plain.receiver,
-          content: plain.content,
-          status: plain.status,
-          seenAt: plain.seenAt,
-          isRead: plain.isRead,
-          createdAt: plain.createdAt
-        };
+        return toPublicMessage(plain, currentUserId);
       })
     });
 
